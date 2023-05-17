@@ -1,6 +1,6 @@
 import re
 import numpy as np
-from mesh import Face, Mesh
+from maniflow.mesh import Face, Mesh
 
 
 class OBJFile:
