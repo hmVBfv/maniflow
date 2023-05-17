@@ -24,7 +24,7 @@ class Face:
     def __repr__(self) -> str:
         return "f " + str(self.vertices)
 
-    def __getitem__(self, item) -> np.array:
+    def __getitem__(self, item: int) -> np.array:
         """
         Syntactic sugar to easily get the vertices that make up the face.
         :param item: the index of the vertex in the list that make up the face.
