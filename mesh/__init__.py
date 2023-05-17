@@ -63,7 +63,14 @@ class Face:
 
 
 class Mesh:
+    """
+    A class represent and store mesh data. Meshes consist of faces and vertices.
+    """
     def __init__(self):
+        """
+        The faces of the mesh are stored as objects of the Face class in the list faces.
+        The vertices of the mesh are stored as numpy arrays in the list vertices.
+        """
         self.faces = list()
         self.vertices = list()
 
@@ -74,5 +81,9 @@ class Mesh:
         self.faces.append(face)
 
     def updateNormals(self):
+        """
+        A method that updates all normal vectors according to the updateNormal method for every face in the mesh.
+        :return:
+        """
         for face in self.faces:
             face.updateNormal()
