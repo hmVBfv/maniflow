@@ -43,5 +43,3 @@ class OBJFile:
 
         mesh.updateNormals()  # we finally update the normals of each face
         return mesh
-
-
