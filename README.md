@@ -4,7 +4,7 @@
 
 The example given here will create a moebius strip. We'll demonstrate this using the following code:
 
-```
+```python
 from maniflow.mesh.parameterized import *
 from maniflow.mesh.obj import OBJFile
 
@@ -23,7 +23,8 @@ u = Grid((0, 2 * np.pi), (-1, 1), 30, 30)  # create a high resolution grid
 moebiusMesh = moebius(u)  # mapping the vertices from the grid according to the parametrisation
 OBJFile.write(moebiusMesh, "moebius.obj")  # writing the mesh data to the file 'moebius.obj'
 ```
-
+The .obj file created by this code can be loaded into ![Blender](https://www.blender.org/):
+![Screenshot](doc/moebius_2023-05-22.png)
 
 ## Getting started
 To install the libarary, use
