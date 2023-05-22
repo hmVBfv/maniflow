@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 
 class Face:
@@ -87,3 +88,6 @@ class Mesh:
         """
         for face in self.faces:
             face.updateNormal()
+
+    def copy(self) -> "Mesh":
+        return copy.deepcopy(self)
