@@ -8,7 +8,7 @@ class Face:
     the vertices that make up the face. Faces can be made up of 3 or more vertices.
     The vertices are stored in the associated mesh object.
     """
-    def __init__(self, mesh,  *vertices: int):
+    def __init__(self, mesh: "Mesh",  *vertices: int):
         """
         Initializes an object of the class Face.
         :param mesh: the mesh where the face is a part of
