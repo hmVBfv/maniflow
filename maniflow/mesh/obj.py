@@ -43,3 +43,22 @@ class OBJFile:
 
         mesh.updateNormals()  # we finally update the normals of each face
         return mesh
+
+    @staticmethod
+    def write(mesh: Mesh, filename: str):
+        with open(filename, "w") as file:
+            content = str()
+            for vertex in mesh.vertices:
+                content += "v"
+                for entry in vertex:
+                    content += " %.5f" % entry
+                content += "\n"
+
+            for face in mesh.faces:
+                content += "f"
+                for entry in face.vertices:
+                    content += " %d" % (entry+1)
+                content += "\n"
+            file.write(content)
+
+
