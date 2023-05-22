@@ -9,7 +9,7 @@ def lattice(xrange, yrange, n, m):
     return [np.array([x, y]) for x in xx for y in yy]
 
 
-class Rectangle(Mesh):
+class Grid(Mesh):
     def __init__(self, xrange, yrange, n, m):
         super().__init__()
         self.vertices = lattice(xrange, yrange, n, m)

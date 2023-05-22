@@ -1,5 +1,28 @@
 # Scientific computing
 
+## Generating a mesh from a given parametrisation
+
+The example given here will create a moebius strip. We'll demonstrate this using the following code:
+
+```
+from maniflow.mesh.parameterized import *
+from maniflow.mesh.obj import OBJFile
+
+
+@VertexFunction
+def moebius(vertex):
+    x = vertex[0]
+    y = vertex[1]
+    x0 = np.cos(x) * (1 + (y / 2) * np.cos(x / 2))
+    x1 = np.sin(x) * (1 + (y / 2) * np.cos(x / 2))
+    x2 = (y / 2) * np.sin(x / 2)
+    return np.array([x0, x1, x2])
+
+
+u = Grid((0, 2 * np.pi), (-1, 1), 30, 30)  # create a high resolution grid
+moebiusMesh = moebius(u)  # mapping the vertices from the grid according to the parametrisation
+OBJFile.write(moebiusMesh, "moebius.obj")  # writing the mesh data to the file 'moebius.obj'
+```
 
 
 ## Getting started
