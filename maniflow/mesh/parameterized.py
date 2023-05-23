@@ -16,7 +16,7 @@ class Grid(Mesh):
         self.compileFaces(n, m)
 
     def compileFaces(self, n, m):
-        vId = lambda i, j: i * n + j
+        vId = lambda i, j: i * m + j
         for i in range(n - 1):
             for j in range(m - 1):
                 self.faces.append(Face(self, vId(i, j), vId(i+1, j), vId(i+1, j+1)))
