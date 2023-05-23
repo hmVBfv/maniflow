@@ -60,7 +60,8 @@ class Face:
         """
         a = self[0] - self[1]
         b = self[0] - self[2]
-        self.setNormal(np.cross(a, b))
+        normal = np.cross(a, b)
+        self.setNormal(normal / np.linalg.norm(normal))
 
 
 class Mesh:
