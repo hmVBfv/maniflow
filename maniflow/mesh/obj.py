@@ -46,19 +46,24 @@ class OBJFile:
 
     @staticmethod
     def write(mesh: Mesh, filename: str):
-        with open(filename, "w") as file:
-            content = str()
+        """
+        A method to write mesh data to an .obj file.
+        :param mesh: the mesh to be written to the file
+        :param filename: the .obj file to write to
+        :return:
+        """
+        with open(filename, "w") as file:  # we open the specified file
+            content = str()  # this will store  all  the mesh data in .obj file format
             for vertex in mesh.vertices:
-                content += "v"
+                content += "v"  # we write a 'v' at the beginning of the line and add all coordinates
                 for entry in vertex:
-                    content += " %.5f" % entry
+                    content += " %.5f" % entry  # the decimal  precision is set to five decimal places
                 content += "\n"
 
             for face in mesh.faces:
-                content += "f"
+                content += "f"   # we write a 'f' at the beginning of the line and add all vertices
                 for entry in face.vertices:
-                    content += " %d" % (entry+1)
+                    content += " %d" % (entry + 1)
                 content += "\n"
-            file.write(content)
 
-
+            file.write(content)   # finally the content is written to the file
