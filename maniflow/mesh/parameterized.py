@@ -14,6 +14,9 @@ def lattice(xrange: tuple[float], yrange: tuple[float], n: int, m: int) -> list[
     :param m: the resolution of the y component
     :return: a lattice with the specified upper and lower bounds and specified resolutions
     """
+    if n < 1 or m < 1:
+        raise ValueError("m and n have to be natural numbers.")
+
     xx = list(np.linspace(*xrange, num=n))
     yy = list(np.linspace(*yrange, num=m))
 
