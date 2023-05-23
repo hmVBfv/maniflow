@@ -19,13 +19,13 @@ def moebius(vertex):
     return np.array([x0, x1, x2])
 
 
-u = Grid((0, 2 * np.pi), (-1, 1), 30, 30)  # create a high resolution grid
+u = Grid((0, 2 * np.pi), (-1, 1), 30, 10)  # create a high resolution grid
 moebiusMesh = moebius(u)  # mapping the vertices from the grid according to the parametrisation
 OBJFile.write(moebiusMesh, "moebius.obj")  # writing the mesh data to the file 'moebius.obj'
 ```
 The .obj file created by this code can be loaded into ![Blender](https://www.blender.org/):
 
-![Screenshot](doc/moebius_2023-05-22.png)
+![Screenshot](doc/moebius_2023-05-23.png)
 
 ## Getting started
 To install the libarary, use
