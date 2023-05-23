@@ -37,6 +37,9 @@ class Face:
         except Exception as e:
             raise e
 
+    def __len__(self):
+        return len(self.vertices)
+
     @property
     def normal(self) -> np.array:
         """
@@ -92,3 +95,35 @@ class Mesh:
 
     def copy(self) -> "Mesh":
         return copy.deepcopy(self)
+
+    @property
+    def v(self) -> int:
+        """
+        Syntactic sugar for the computation of the euler characteristic
+        :return: the number of vertices in the mesh
+        """
+        return len(self.vertices)
+
+    @property
+    def f(self) -> int:
+        """
+        Syntactic sugar for the computation of the euler characteristic
+        :return: the number of faces in the mesh
+        """
+        return len(self.faces)
+
+    @property
+    def e(self) -> int:
+        """
+        Syntactic sugar for the computation of the euler characteristic
+        :return: the number of edges in the mesh
+        """
+        edges = set()
+        for face in self.faces:  # we traverse all faces and consider edges as pairs of vertices
+            for i in range(len(face)):
+                a = face.vertices[i - 1]
+                b = face.vertices[i]
+                if (a, b) not in edges and (b, a) not in edges:  # we need to consider that edges are symmetric
+                    # in a way that (a,b) = (b,a).
+                    edges.add((a, b))  # in this case (a, b) is not yet in the set
+        return len(edges)

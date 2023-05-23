@@ -2,6 +2,17 @@ import functools
 from mesh import Mesh
 
 
+def eulerCharacteristic(mesh: Mesh) -> int:
+    """
+    Computes the Euler characteristic of a given mesh by the formula
+    V - E + F where V is the number of vertices, E is the number of
+    edges and F is the number of faces in the mesh
+    :param mesh: the mesh to compute the Euler characteristic of
+    :return: the Euler characteristic of the given mesh
+    """
+    return mesh.v - mesh.e + mesh.f
+
+
 class VertexFunction(object):
     """
     A wrapper class to decorate certain methods that modify the
