@@ -34,7 +34,7 @@ class Graph:
         that is currently traversed. The graph will be traversed
         in breadth-first ordering.
         :param start: the starting vertex from where the traversal should start
-        :return: the adjacent nodes of the node that is currently traversed
+        :return: the next adjacent node in breadth first ordering
         """
         queue = [start]
         visited = [start]
@@ -43,10 +43,8 @@ class Graph:
             nextVertex = queue.pop()  # we take the next neighbor in the list
             visited.append(nextVertex)  # making sure that we do not traverse a node twice
             edges = self.adjacent[nextVertex]  # we get the edges of the next neighbor
-            vertices = list()  # here we store the vertices that are neighbors to nextVertex
             for j, k in enumerate(edges):
                 if j not in visited and k:  # we make sure that we do not traverse a node twice
                     queue.append(j)  # we set up the next iteration and put the neighbors of
                     # nextVertex into the queue
-                    vertices.append(j)
-            yield vertices
+            yield nextVertex

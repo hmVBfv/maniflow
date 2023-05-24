@@ -25,9 +25,8 @@ def connectedComponents(mesh: Mesh) -> list[list[int]]:
         traversal = [face for face in mesh.faceGraph.breadthFirstTraversal(startFace)]  # do a full traversal
         traversed = set()
         components.append(traversal)  # we add the faces we traversed to the components
-        for faces in traversal:
-            for face in faces:
-                traversed.add(face)
+        for face in traversal:
+            traversed.add(face)
         faceSet = faceSet.difference(traversed)
 
     return components
