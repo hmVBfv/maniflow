@@ -23,11 +23,8 @@ def connectedComponents(mesh: Mesh) -> list[list[int]]:
     while faceSet:  # we repeat this process until there are no faces left
         startFace = faceSet.pop()  # choose some arbitrary starting surface
         traversal = [face for face in mesh.faceGraph.breadthFirstTraversal(startFace)]  # do a full traversal
-        traversed = set()
         components.append(traversal)  # we add the faces we traversed to the components
-        for face in traversal:
-            traversed.add(face)
-        faceSet = faceSet.difference(traversed)
+        faceSet = faceSet.difference(set(traversal))
 
     return components
 
