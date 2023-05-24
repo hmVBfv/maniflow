@@ -4,18 +4,32 @@ from maniflow.mesh import Mesh, Face
 
 
 def connectedComponents(mesh: Mesh) -> list[list[int]]:
-    components = list()
-    faceSet = set(range(mesh.f))
-    while faceSet:
-        startFace = faceSet.pop()
-        traversal = [face for face in mesh.faceGraph.breadthFirstTraversal(startFace)]
+    """
+    A method to compute the connected components of a mesh.
+    The connected components are represented as lists of integers where
+    the integers correspond to faces in the mesh (they are the indices of
+    the mesh.faces list)
+
+    To determine the connection components, we traverse the faceGraph of the mesh
+    using breadthFirstTraversal. We start at an arbitrary starting surface.
+    The traversal already gives us a list of connected faces - that is one connection
+    component each. If we delete these faces from the list of all faces, we can continue
+    this process until there are no more faces left.
+    :param mesh: the mesh of which the correlation components are to be determined
+    :return: a list of all connection components
+    """
+    components = list()  # the connection components will be stored here
+    faceSet = set(range(mesh.f))  # this is the list of all faces (their id's in the list of the mesh)
+    while faceSet:  # we repeat this process until there are no faces left
+        startFace = faceSet.pop()  # choose some arbitrary starting surface
+        traversal = [face for face in mesh.faceGraph.breadthFirstTraversal(startFace)]  # do a full traversal
         traversed = set()
-        components.append(traversal)
+        components.append(traversal)  # we add the faces we traversed to the components
         for faces in traversal:
             for face in faces:
                 traversed.add(face)
         faceSet = faceSet.difference(traversed)
-        print(len(faceSet))
+
     return components
 
 
