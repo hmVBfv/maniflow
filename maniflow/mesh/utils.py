@@ -3,6 +3,22 @@ import numpy as np
 from maniflow.mesh import Mesh, Face
 
 
+def connectedComponents(mesh: Mesh) -> list[list[int]]:
+    components = list()
+    faceSet = set(range(mesh.f))
+    while faceSet:
+        startFace = faceSet.pop()
+        traversal = [face for face in mesh.faceGraph.breadthFirstTraversal(startFace)]
+        traversed = set()
+        components.append(traversal)
+        for faces in traversal:
+            for face in faces:
+                traversed.add(face)
+        faceSet = faceSet.difference(traversed)
+        print(len(faceSet))
+    return components
+
+
 def adjacentFaces(mesh: Mesh, vertex: int) -> list[Face]:
     """
     A method to determine the adjacent faces of a given vertex
