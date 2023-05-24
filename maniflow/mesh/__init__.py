@@ -4,13 +4,24 @@ from maniflow.utils.graph import Graph
 
 
 def faceGraph(mesh: "Mesh") -> Graph:
+    """
+    A method to compute the face graph of a given mesh.
+    The face graph is a graph where the faces of the mesh are considered
+    as nodes in the graph. Two nodes in the graph are connected in the graph
+    iff they share two vertices (in the mesh).
+
+    The time complexity of this algorithm is O(F^2) since we iterate through the
+    faces of the graph in a nested way.
+    :param mesh: The mesh from which the face graph is to be determined
+    :return: the face graph of the given mesh
+    """
     graph = Graph(mesh.f)
     for i, face1 in enumerate(mesh.faces):
         for j, face2 in enumerate(mesh.faces):
             if i == j:
                 continue
-
-            if len(set(face1.vertices).intersection(set(face2.vertices))) == 2:
+            # now we check whether the faces share exactly two vertices
+            if len(set(face1.vertices) & set(face2.vertices)) == 2:
                 graph.addEdge(i, j)
 
     return graph
@@ -147,6 +158,12 @@ class Mesh:
 
     @property
     def faceGraph(self):
+        """
+        A method that dynamically computes the face graph of the mesh
+        and the outputs it
+        :return: the face graph of the mesh
+        """
         if self._faceGraph is None:
             self._faceGraph = faceGraph(self)
+
         return self._faceGraph
