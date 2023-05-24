@@ -1,5 +1,19 @@
 import copy
 import numpy as np
+from maniflow.utils.graph import Graph
+
+
+def faceGraph(mesh: "Mesh") -> Graph:
+    graph = Graph(mesh.f)
+    for i, face1 in enumerate(mesh.faces):
+        for j, face2 in enumerate(mesh.faces):
+            if i == j:
+                continue
+
+            if len(set(face1.vertices).intersection(set(face2.vertices))) == 2:
+                graph.addEdge(i, j)
+
+    return graph
 
 
 class Face:
@@ -80,6 +94,7 @@ class Mesh:
         """
         self.faces = list()
         self.vertices = list()
+        self._faceGraph = None  # hidden variable that is computed dynamically
 
     def addVertex(self, vertex: np.array):
         self.vertices.append(vertex)
@@ -129,3 +144,9 @@ class Mesh:
                     # in a way that (a,b) = (b,a).
                     edges.add((a, b))  # in this case (a, b) is not yet in the set
         return len(edges)
+
+    @property
+    def faceGraph(self):
+        if self._faceGraph is None:
+            self._faceGraph = faceGraph(self)
+        return self._faceGraph
