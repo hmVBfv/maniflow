@@ -1,6 +1,6 @@
 import functools
 import numpy as np
-from mesh import Mesh, Face
+from maniflow.mesh import Mesh, Face
 
 
 def adjacentFaces(mesh: Mesh, vertex: int) -> list[Face]:
@@ -56,6 +56,7 @@ class VertexFunction(object):
     A wrapper class to decorate certain methods that modify the
     vertices in a given mesh.
     """
+
     def __init__(self, func: callable):
         """
         Initializes the wrapper class and stores the function that is
@@ -80,6 +81,6 @@ class VertexFunction(object):
         for i in range(len(new.vertices)):  # now we apply the function to all vertices on the mesh
             new.vertices[i] = self.func(new.vertices[i])
 
-        new.updateNormals()   # as the vertices have changed we need to update the surface normals
+        new.updateNormals()  # as the vertices have changed we need to update the surface normals
 
         return new

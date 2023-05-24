@@ -1,5 +1,5 @@
-import numpy as np
 import copy
+import numpy as np
 
 
 class Face:
@@ -8,7 +8,8 @@ class Face:
     the vertices that make up the face. Faces can be made up of 3 or more vertices.
     The vertices are stored in the associated mesh object.
     """
-    def __init__(self, mesh: "Mesh",  *vertices: int):
+
+    def __init__(self, mesh: "Mesh", *vertices: int):
         """
         Initializes an object of the class Face.
         :param mesh: the mesh where the face is a part of
@@ -71,6 +72,7 @@ class Mesh:
     """
     A class represent and store mesh data. Meshes consist of faces and vertices.
     """
+
     def __init__(self):
         """
         The faces of the mesh are stored as objects of the Face class in the list faces.
