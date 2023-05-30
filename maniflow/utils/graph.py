@@ -36,15 +36,15 @@ class Graph:
         :param start: the starting vertex from where the traversal should start
         :return: the next adjacent node in breadth first ordering
         """
-        queue = [start]
-        visited = [start]
+        queue = {start}
+        visited = {start}
 
         while queue:  # as long as there are neighbors that we have not yet traversed
             nextVertex = queue.pop()  # we take the next neighbor in the list
-            visited.append(nextVertex)  # making sure that we do not traverse a node twice
+            visited.add(nextVertex)  # making sure that we do not traverse a node twice
             edges = self.adjacent[nextVertex]  # we get the edges of the next neighbor
             for j, k in enumerate(edges):
                 if j not in visited and k:  # we make sure that we do not traverse a node twice
-                    queue.append(j)  # we set up the next iteration and put the neighbors of
+                    queue.add(j)  # we set up the next iteration and put the neighbors of
                     # nextVertex into the queue
             yield nextVertex
