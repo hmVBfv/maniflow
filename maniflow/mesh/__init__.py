@@ -17,12 +17,16 @@ def faceGraph(mesh: "Mesh") -> Graph:
     """
     graph = Graph(mesh.f)
     for i, face1 in enumerate(mesh.faces):
+        neighbors = 0  # we store the number of adjacent faces we already found
         for j, face2 in enumerate(mesh.faces):
             if i == j:
                 continue
+            if neighbors == len(face1):  # we have found all neighbors in that case
+                break
             # now we check whether the faces share exactly two vertices
             if len(set(face1.vertices) & set(face2.vertices)) == 2:
                 graph.addEdge(i, j)
+                neighbors += 1
 
     return graph
 
