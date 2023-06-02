@@ -29,6 +29,19 @@ def connectedComponents(mesh: Mesh) -> list[list[int]]:
     return components
 
 
+def chooseOrientation(mesh: Mesh):
+    visited = set()
+    for face in range(mesh.f):
+        visited.add(face)
+        normal = mesh.faces[face].normal
+        for neighbor in mesh.faceGraph.getNeighbors(face):
+            if neighbor in visited:
+                continue
+            visited.add(neighbor)
+            if np.dot(normal, mesh.faces[neighbor].normal) < 0:
+                mesh.faces[neighbor].setNormal(-1 * mesh.faces[neighbor].normal)
+
+
 def adjacentFaces(mesh: Mesh, vertex: int) -> list[Face]:
     """
     A method to determine the adjacent faces of a given vertex
@@ -54,14 +67,11 @@ def isOrientable(mesh: Mesh) -> bool:
     :param mesh: the mesh for which the decision should be made whether it is orientable
     :return: True of it is orientable. Otherwise, False.
     """
-    for vertex in range(len(mesh.vertices)):  # traverse all vertices in the mesh
-        adjacentNormals = list(map(lambda face: face.normal,  # we determine the normal vectors of the adjoining faces
-                                   adjacentFaces(mesh, vertex)))  # and store them in a list
-        for normal in adjacentNormals[1::]:  # we only need to compare the orientation of each vector to the first
-            # vector in the list
-            if np.dot(normal, adjacentNormals[0]) < 0:
-                # in this case, the vectors do not have the same orientation and
-                # the mesh is not orientable
+    chooseOrientation(mesh)
+    for face in range(mesh.f):
+        normal = mesh.faces[face].normal
+        for neighbor in mesh.faceGraph.getNeighbors(face):
+            if np.dot(normal, mesh.faces[neighbor].normal) < 0:
                 return False
     return True
 
