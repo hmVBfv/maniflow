@@ -28,6 +28,9 @@ class Graph:
         self.adjacent[i, j] = 1
         self.adjacent[j, i] = 1
 
+    def getNeighbors(self, i) -> set:
+        return set(np.where(self.adjacent[i] == 1)[0])
+
     def breadthFirstTraversal(self, start: int) -> list[int]:
         """
         An iterator that yields all the neighbors of the node
