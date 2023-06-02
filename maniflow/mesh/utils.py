@@ -15,6 +15,8 @@ def connectedComponents(mesh: Mesh) -> list[list[int]]:
     The traversal already gives us a list of connected faces - that is one connection
     component each. If we delete these faces from the list of all faces, we can continue
     this process until there are no more faces left.
+
+    The runtime complexity of this algorithm lies in O(F^2).
     :param mesh: the mesh of which the correlation components are to be determined
     :return: a list of all connection components
     """
@@ -29,7 +31,7 @@ def connectedComponents(mesh: Mesh) -> list[list[int]]:
     return components
 
 
-def chooseOrientation(mesh: Mesh):
+def pushOrientation(mesh: Mesh):
     """
     This method chooses a compatible orientation on a mesh.
     We traverse the faces of the mesh in a modified fashion of
@@ -42,6 +44,8 @@ def chooseOrientation(mesh: Mesh):
     adjust one of the normal vectors by multiplying it with -1
     to make them compatible. Thereby we 'push' the orientation of one face
     to the other.
+
+    The runtime complexity of this algorithm lies in O(F^2).
     :param mesh: The mesh on which an orientation is to be chosen
     :return:
     """
@@ -80,17 +84,24 @@ def isOrientable(mesh: Mesh) -> bool:
     """
     A method to determine whether a given mesh is orientable or not.
     In general, a manifold is orientable if there is a non-vanishing continuous normal field.
-    To check whether the mesh is orientable or not, we traverse all vertices in the mesh and check whether
-    the adjacent surfaces are oriented in the same way. We can do this by looking at the normal vectors of
-    the faces and forming all possible scalar products. These all have to be non-negative.
-    Otherwise, we are dealing with a non-orientable surface.
+    To check whether the mesh is orientable or not, we first choose an orientation on the mesh
+    by applying the algorithm from chooseOrientation.
+    Then we traverse each face of the mesh again and check whether the orientations
+    of the faces are really compatible since the traversal in chooseOrientation
+    does not guarantee that every adjacent pair of faces is compatible - breadth first traversal
+    lets us consider the graph as a tree. In this method we check each pair of adjacent faces.
+    If a pair of adjacent faces is not compatible, the mesh is not orientable.
+
+    The runtime complexity of this algorithm lies in O(F^2).
     :param mesh: the mesh for which the decision should be made whether it is orientable
     :return: True of it is orientable. Otherwise, False.
     """
-    chooseOrientation(mesh)
-    for face in range(mesh.f):
+    pushOrientation(mesh)  # we choose the push an orientation to the mesh
+
+    for face in range(mesh.f):  # we traverse all faces in the mesh
         normal = mesh.faces[face].normal
-        for neighbor in mesh.faceGraph.getNeighbors(face):
+        for neighbor in mesh.faceGraph.getNeighbors(face):  # if any neighbor of the face is not compatible
+            # the mesh is not orientable
             if np.dot(normal, mesh.faces[neighbor].normal) < 0:
                 return False
     return True
