@@ -30,16 +30,36 @@ def connectedComponents(mesh: Mesh) -> list[list[int]]:
 
 
 def chooseOrientation(mesh: Mesh):
-    visited = set()
-    for face in range(mesh.f):
-        visited.add(face)
-        normal = mesh.faces[face].normal
-        for neighbor in mesh.faceGraph.getNeighbors(face):
-            if neighbor in visited:
-                continue
-            visited.add(neighbor)
-            if np.dot(normal, mesh.faces[neighbor].normal) < 0:
-                mesh.faces[neighbor].setNormal(-1 * mesh.faces[neighbor].normal)
+    """
+    This method chooses a compatible orientation on a mesh.
+    We traverse the faces of the mesh in a modified fashion of
+    the breadth first traversal.
+    We 'push' the orientation of the first face in a connection component onto
+    all other faces in that connection component. The orientation
+    of a face is represented as the normal vector of the face.
+    Two faces have incompatible orientation if the dot product
+    of the two normal vectors is negative. One can then
+    adjust one of the normal vectors by multiplying it with -1
+    to make them compatible. Thereby we 'push' the orientation of one face
+    to the other.
+    :param mesh: The mesh on which an orientation is to be chosen
+    :return:
+    """
+    components = connectedComponents(mesh)  # we store the connected components of the mesh
+    for component in components:  # and traverse each component
+        visited = set()  # we store the faces that we have already traversed
+        queue = {component[0]}  # the traversal in each component starts at the first face in the component
+        while queue:
+            face = queue.pop()
+            visited.add(face)
+            normal = mesh.faces[face].normal
+            neighbors = mesh.faceGraph.getNeighbors(face)\
+                .difference(visited)
+            queue |= neighbors  # up to here everything was analogous to the breadth first traversal
+            for neighbor in neighbors:  # we now 'push' the orientation of the face that is currently traversed onto
+                # its neighbors
+                if np.dot(normal, mesh.faces[neighbor].normal) < 0:
+                    mesh.faces[neighbor].setNormal(-1 * mesh.faces[neighbor].normal)
 
 
 def adjacentFaces(mesh: Mesh, vertex: int) -> list[Face]:
