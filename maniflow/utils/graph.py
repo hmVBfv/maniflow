@@ -28,7 +28,16 @@ class Graph:
         self.adjacent[i, j] = 1
         self.adjacent[j, i] = 1
 
-    def getNeighbors(self, i) -> set:
+    def getNeighbors(self, i: int) -> set:
+        """
+        A method to determine the neighbors of a given node i
+        in the graph.
+        :param i: the node whose neighbors shall be determined
+        :return: a set consisting of neighbors of the given node
+        """
+        if i >= len(self.adjacent):
+            raise ValueError("i has to be a node in the graph!")
+
         return set(np.where(self.adjacent[i] == 1)[0])
 
     def breadthFirstTraversal(self, start: int) -> list[int]:
