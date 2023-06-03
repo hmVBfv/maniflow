@@ -1,6 +1,4 @@
-from mesh import *
-from mesh.utils import *
-import numpy as np
+from maniflow.mesh.utils import *
 
 
 def lattice(xrange: tuple[float], yrange: tuple[float], n: int, m: int) -> list[np.array]:
@@ -29,6 +27,7 @@ class Grid(Mesh):
     underlying lattice.
     These grids are 2-dimensional.
     """
+
     def __init__(self, xrange: tuple[float], yrange: tuple[float], n: int, m: int):
         super().__init__()
         self.vertices = lattice(xrange, yrange, n, m)
@@ -45,8 +44,8 @@ class Grid(Mesh):
         vId = lambda i, j: i * m + j
         for i in range(n - 1):
             for j in range(m - 1):
-                self.faces.append(Face(self, vId(i, j), vId(i+1, j), vId(i+1, j+1)))
-                self.faces.append(Face(self, vId(i, j), vId(i+1, j+1), vId(i, j+1)))
+                self.faces.append(Face(self, vId(i, j), vId(i + 1, j), vId(i + 1, j + 1)))
+                self.faces.append(Face(self, vId(i, j), vId(i + 1, j + 1), vId(i, j + 1)))
 
 
 @VertexFunction

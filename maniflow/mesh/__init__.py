@@ -1,5 +1,34 @@
-import numpy as np
 import copy
+import numpy as np
+from maniflow.utils.graph import Graph
+
+
+def faceGraph(mesh: "Mesh") -> Graph:
+    """
+    A method to compute the face graph of a given mesh.
+    The face graph is a graph where the faces of the mesh are considered
+    as nodes in the graph. Two nodes in the graph are connected in the graph
+    iff they share two vertices (in the mesh).
+
+    The time complexity of this algorithm is O(F^2) since we iterate through the
+    faces of the graph in a nested way.
+    :param mesh: The mesh from which the face graph is to be determined
+    :return: the face graph of the given mesh
+    """
+    graph = Graph(mesh.f)
+    for i, face1 in enumerate(mesh.faces):
+        neighbors = 0  # we store the number of adjacent faces we already found
+        for j, face2 in enumerate(mesh.faces):
+            if i == j:
+                continue
+            if neighbors == len(face1):  # we have found all neighbors in that case
+                break
+            # now we check whether the faces share exactly two vertices
+            if len(set(face1.vertices) & set(face2.vertices)) == 2:
+                graph.addEdge(i, j)
+                neighbors += 1
+
+    return graph
 
 
 class Face:
@@ -8,7 +37,8 @@ class Face:
     the vertices that make up the face. Faces can be made up of 3 or more vertices.
     The vertices are stored in the associated mesh object.
     """
-    def __init__(self, mesh: "Mesh",  *vertices: int):
+
+    def __init__(self, mesh: "Mesh", *vertices: int):
         """
         Initializes an object of the class Face.
         :param mesh: the mesh where the face is a part of
@@ -71,6 +101,7 @@ class Mesh:
     """
     A class represent and store mesh data. Meshes consist of faces and vertices.
     """
+
     def __init__(self):
         """
         The faces of the mesh are stored as objects of the Face class in the list faces.
@@ -78,6 +109,7 @@ class Mesh:
         """
         self.faces = list()
         self.vertices = list()
+        self._faceGraph = None  # hidden variable that is computed dynamically
 
     def addVertex(self, vertex: np.array):
         self.vertices.append(vertex)
@@ -127,3 +159,15 @@ class Mesh:
                     # in a way that (a,b) = (b,a).
                     edges.add((a, b))  # in this case (a, b) is not yet in the set
         return len(edges)
+
+    @property
+    def faceGraph(self):
+        """
+        A method that dynamically computes the face graph of the mesh
+        and the outputs it
+        :return: the face graph of the mesh
+        """
+        if self._faceGraph is None:
+            self._faceGraph = faceGraph(self)
+
+        return self._faceGraph

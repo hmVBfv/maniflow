@@ -9,6 +9,7 @@ class OBJFile:
     This class provides methods for reading and writing meshes from/to .obj
     files.
     """
+
     @staticmethod
     def read(filename: str) -> Mesh:
         """
@@ -61,9 +62,9 @@ class OBJFile:
                 content += "\n"
 
             for face in mesh.faces:
-                content += "f"   # we write a 'f' at the beginning of the line and add all vertices
+                content += "f"  # we write a 'f' at the beginning of the line and add all vertices
                 for entry in face.vertices:
                     content += " %d" % (entry + 1)
                 content += "\n"
 
-            file.write(content)   # finally the content is written to the file
+            file.write(content)  # finally the content is written to the file
