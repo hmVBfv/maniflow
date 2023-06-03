@@ -3,6 +3,25 @@ import numpy as np
 from maniflow.mesh import Mesh, Face
 
 
+def _normal_form(t1, t2):
+    shift = lambda tup: tuple([tup[(i + 1) % len(tup)] for i in range(len(tup))])
+    intersect = tuple([e for e in t1 if e in t2])
+    cutoff_t1 = t1[:2:]
+    cutoff_t2 = t2[:2:]
+    if cutoff_t1 == intersect or cutoff_t1 == intersect[::-1]:
+        if cutoff_t2 == intersect or cutoff_t2 == intersect[::-1]:
+            return t1, t2
+    while True:
+        if t1[:2:] == intersect or t1[:2:] == intersect[::-1]:
+            return _normal_form(t2, t1)
+        t1 = shift(t1)
+
+
+def compatibleOrientation(face1, face2):
+    t1, t2 = _normal_form(face1, face2)
+    return not t1[:2:] == t2[:2:]
+
+
 def connectedComponents(mesh: Mesh) -> list[list[int]]:
     """
     A method to compute the connected components of a mesh.
@@ -56,14 +75,13 @@ def pushOrientation(mesh: Mesh):
         while queue:
             face = queue.pop()
             visited.add(face)
-            normal = mesh.faces[face].normal
             neighbors = mesh.faceGraph.getNeighbors(face)\
                 .difference(visited)
             queue |= neighbors  # up to here everything was analogous to the breadth first traversal
             for neighbor in neighbors:  # we now 'push' the orientation of the face that is currently traversed onto
                 # its neighbors
-                if np.dot(normal, mesh.faces[neighbor].normal) < 0:
-                    mesh.faces[neighbor].setNormal(-1 * mesh.faces[neighbor].normal)
+                if not compatibleOrientation(mesh.faces[face].vertices, mesh.faces[neighbor].vertices):
+                    mesh.faces[neighbor].vertices = mesh.faces[neighbor].vertices[::-1]
 
 
 def adjacentFaces(mesh: Mesh, vertex: int) -> list[Face]:
@@ -99,10 +117,9 @@ def isOrientable(mesh: Mesh) -> bool:
     pushOrientation(mesh)  # we choose the push an orientation to the mesh
 
     for face in range(mesh.f):  # we traverse all faces in the mesh
-        normal = mesh.faces[face].normal
         for neighbor in mesh.faceGraph.getNeighbors(face):  # if any neighbor of the face is not compatible
             # the mesh is not orientable
-            if np.dot(normal, mesh.faces[neighbor].normal) < 0:
+            if not compatibleOrientation(mesh.faces[face].vertices, mesh.faces[neighbor].vertices):
                 return False
     return True
 
