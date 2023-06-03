@@ -1,4 +1,5 @@
 from maniflow.mesh.utils import *
+import numpy as np
 
 
 def lattice(xrange: tuple[float], yrange: tuple[float], n: int, m: int) -> list[np.array]:
