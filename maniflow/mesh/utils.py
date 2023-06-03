@@ -1,24 +1,49 @@
 import functools
-import numpy as np
 from maniflow.mesh import Mesh, Face
 
 
-def _normal_form(t1, t2):
-    shift = lambda tup: tuple([tup[(i + 1) % len(tup)] for i in range(len(tup))])
-    intersect = tuple([e for e in t1 if e in t2])
-    cutoff_t1 = t1[:2:]
-    cutoff_t2 = t2[:2:]
+def _normal_form(face1: tuple[int], face2: tuple[int]) -> list[tuple[int]]:
+    """
+    A method that takes two vertex lists of adjacent faces and
+    shifts them so that the vertices that are shared by the faces are
+    in the first and second place of the vertex lists.
+    Example: Consider to adjacent faces with the
+    vertex lists (1, 3, 2) and (2, 1, 4).
+    The output will be (2, 1, 3) and (2, 1, 4).
+    And one can immediately see that the orientations of these
+    faces do not match! Since the (directional) edge (2, 1) is part
+    of both vertex lists.
+
+    :param face1: the vertex list of the first list
+    :param face2: the vertex list of the second list
+    :return: the vertex lists of both faces where the shared vertices are
+    at the start of the list. The method does not change the orientation of the faces.
+    """
+    shift = lambda t: tuple([t[(i + 1) % len(t)] for i in range(len(t))])  # performs a shift to the given tuple
+    # example: (1, 2, 3) becomes (2, 3, 1)
+    intersect = tuple([e for e in face1 if e in face2])  # the shared vertices
+    cutoff_t1 = face1[:2:]  # we cut of the third entry of the lists
+    cutoff_t2 = face2[:2:]
+    # now we check whether the first two entries are indeed the shared vertices
     if cutoff_t1 == intersect or cutoff_t1 == intersect[::-1]:
         if cutoff_t2 == intersect or cutoff_t2 == intersect[::-1]:
-            return t1, t2
+            return face1, face2  # in the case that the first two entries are the shared vertices, we return the lists
     while True:
-        if t1[:2:] == intersect or t1[:2:] == intersect[::-1]:
-            return _normal_form(t2, t1)
-        t1 = shift(t1)
+        if face1[:2:] == intersect or face1[:2:] == intersect[::-1]:  # face1 is  already of the desired form
+            return _normal_form(face2, face1)  # we perform the exact same operations on face2
+        face1 = shift(face1)  # if face1 is not of the desired form, we shift it
 
 
-def compatibleOrientation(face1, face2):
-    t1, t2 = _normal_form(face1, face2)
+def compatibleOrientation(face1: tuple[int], face2: tuple[int]) -> bool:
+    """
+    A method that checks  whether two vertex lists of faces have compatible orientation.
+    Two lists of vertices of adjacent faces are considered compatible
+    if the edge that is shared is traversed in reverse respectively.
+    :param face1: the vertex list of the first face
+    :param face2: the vertex list of the second face
+    :return: True if the orientations match. Otherwise, it will return False.
+    """
+    t1, t2 = _normal_form(face1, face2)  # bring the lists in the form such that the shared vertices are in front
     return not t1[:2:] == t2[:2:]
 
 
@@ -56,13 +81,10 @@ def pushOrientation(mesh: Mesh):
     We traverse the faces of the mesh in a modified fashion of
     the breadth first traversal.
     We 'push' the orientation of the first face in a connection component onto
-    all other faces in that connection component. The orientation
-    of a face is represented as the normal vector of the face.
-    Two faces have incompatible orientation if the dot product
-    of the two normal vectors is negative. One can then
-    adjust one of the normal vectors by multiplying it with -1
-    to make them compatible. Thereby we 'push' the orientation of one face
-    to the other.
+    all other faces in that connection component. The orientation is given by
+    the vertex list of a face (clockwise/counterclockwise).
+    If two faces have incompatible orientation, we
+    can just reverse the vertex list of one of them to adjust the orientation.
 
     The runtime complexity of this algorithm lies in O(F^2).
     :param mesh: The mesh on which an orientation is to be chosen
