@@ -3,11 +3,30 @@ from maniflow.mesh import Mesh, Face
 
 
 def isBoundaryVertex(vertex: int, mesh: Mesh) -> bool:
-    pass
+    neighborFaces = adjacentFaces(mesh, vertex)
+    edges = list()
+    for face in neighborFaces:
+        for i in range(len(face)):
+            if face.vertices[i] == vertex or face.vertices[(i + 1) % len(face)] == vertex:
+                continue
+            edges.append([face.vertices[i], face.vertices[(i + 1) % len(face)]])
+    startVertex = edges[0][0]
+    currentVertex = startVertex
+    visited = set()
+    for _ in range(len(edges)):
+        nextEdge = [v for v in edges if tuple(v) not in visited and currentVertex in v]
+        if not nextEdge:
+            return True
+        visited.add(tuple(nextEdge[0]))
+        if nextEdge[0][0] == currentVertex:
+            currentVertex = nextEdge[0][1]
+            continue
+        currentVertex = nextEdge[0][0]
+    return not currentVertex == startVertex
 
 
 def getBoundaryVertices(mesh: Mesh) -> list[int]:
-    pass
+    return [v for v in range(mesh.v) if isBoundaryVertex(v, mesh)]
 
 
 def _normal_form(face1: tuple[int], face2: tuple[int]) -> list[tuple[int]]:
