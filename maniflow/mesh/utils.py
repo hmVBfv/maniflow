@@ -2,6 +2,14 @@ import functools
 from maniflow.mesh import Mesh, Face
 
 
+def isBoundaryVertex(vertex: int, mesh: Mesh) -> bool:
+    pass
+
+
+def getBoundaryVertices(mesh: Mesh) -> list[int]:
+    pass
+
+
 def _normal_form(face1: tuple[int], face2: tuple[int]) -> list[tuple[int]]:
     """
     A method that takes two vertex lists of adjacent faces and
