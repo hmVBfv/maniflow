@@ -3,29 +3,55 @@ from maniflow.mesh import Mesh, Face
 
 
 def isBoundaryVertex(vertex: int, mesh: Mesh) -> bool:
-    neighborFaces = adjacentFaces(mesh, vertex)
-    edges = list()
+    """
+    A method to determine whether a given vertex is a boundary vertex
+    or not.
+    A vertex is not a boundary vertex if and only if there exists a closed path
+    of edges from the adjacent vertices that does not contain
+    the vertex itself.
+    :param vertex: the given vertex from the mesh
+    :param mesh: the mesh from where the vertex stems from
+    :return: True if the vertex is a boundary vertex. Otherwise, False.
+    """
+    neighborFaces = adjacentFaces(mesh, vertex)  # we determine the adjacent faces to the given vertex
+    edges = list()  # this list will contain all edges from the neighboring faces that do not contain the vertex itself
     for face in neighborFaces:
-        for i in range(len(face)):
+        for i in range(len(face)):  # we now compare all pairs of vertices from each face
             if face.vertices[i] == vertex or face.vertices[(i + 1) % len(face)] == vertex:
                 continue
+            # if neither of the vertices from the pair are equal to the given vertex, we may append the pair to the
+            # list of edges
             edges.append([face.vertices[i], face.vertices[(i + 1) % len(face)]])
+
+    # we store an arbitrary start vertex from the list of edges
     startVertex = edges[0][0]
-    currentVertex = startVertex
-    visited = set()
+    currentVertex = startVertex  # this stores the current vertex that is traversed
+    visited = set()  # we store the edges that we already traversed
     for _ in range(len(edges)):
+        # the next edge we visit is determined by iterating through all edges
+        # that have not yet been visited. If the vertex that is currently traversed is part of
+        # the edge, we visit the edge.
         nextEdge = [v for v in edges if tuple(v) not in visited and currentVertex in v]
         if not nextEdge:
+            # if there are no edges left, the path is not closed, and we found a boundary vertex
             return True
-        visited.add(tuple(nextEdge[0]))
+        visited.add(tuple(nextEdge[0]))  # # we do not want to visit edges twice
+        # now, we update the current vertex by traversing the edge we found
         if nextEdge[0][0] == currentVertex:
             currentVertex = nextEdge[0][1]
             continue
         currentVertex = nextEdge[0][0]
+
+    # the given vertex is not a boundary vertex iff the path is closed
     return not currentVertex == startVertex
 
 
 def getBoundaryVertices(mesh: Mesh) -> list[int]:
+    """
+    A method to determine a list of all boundary vertices of a given mesh.
+    :param mesh: the mesh from which the boundary is to be determined
+    :return: a list of all boundary vertices from the mesh
+    """
     return [v for v in range(mesh.v) if isBoundaryVertex(v, mesh)]
 
 
