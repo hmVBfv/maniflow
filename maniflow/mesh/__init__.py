@@ -135,20 +135,27 @@ class Mesh:
         return copy.deepcopy(self)
     
     def clean(self):
-        verts = list()
-        lookup = dict()
+        """
+        A method that gets rid of redundant vertices in the mesh where vertices are redundant if they are not part of any face.
+        This can lead to problems with calculations such as with eulerCharacteristic().
+        As faces refer to vertex indeces though the map has to updated to account for the removal of the redundancy.
+        """
+        verts = list()  # list for non-redundant vertices
+        lookup = dict()  # linking between former and new vertex indices
 
+        # updating the vertex list
         for face in self.faces:
             for v in face.vertices:
                 if v in lookup:
                     continue
-                lookup[v] = len(verts)
+                lookup[v] = len(verts)  # (former index) v -> (new index) latest index of non-redundant list 
                 verts.append(self.vertices[v])
 
+        # updating the faces
         self.vertices = verts
         for face in self.faces:
-            face.vertices = [lookup[i] for i in face.vertices]
-        self.faces = list(set(self.faces))
+            face.vertices = [lookup[i] for i in face.vertices]  # update the face links
+        self.faces = list(set(self.faces))  # no duplicate faces
 
     @property
     def v(self) -> int:
