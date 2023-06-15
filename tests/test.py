@@ -29,5 +29,20 @@ class TestClean(unittest.TestCase):
         self.assertEqual(m.v, 5)
 
 
+class TestBoundary(unittest.TestCase):
+    def test_boundary(self):
+        self.assertFalse(getBoundaryVertices(OBJFile.read("examples/cube.obj")))
+        self.assertFalse(getBoundaryVertices(OBJFile.read("examples/cone.obj")))
+        # testing if the boundary of the moebius stip (the two half-twist moebius strip) is orientable
+        moebius = OBJFile.read("examples/moebius.obj")
+        boundaryVertices = getBoundaryVertices(moebius)
+        self.assertTrue(boundaryVertices)  # the boundary vertices are not an empty list
+        boundaryFaces = list([f for i in boundaryVertices for f in adjacentFaces(moebius, i)])
+        m = Mesh()
+        m.faces = boundaryFaces
+        m.vertices = moebius.vertices
+        self.assertTrue(isOrientable(m))
+
+
 if __name__ == "__main__":
     unittest.main()
