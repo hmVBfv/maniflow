@@ -54,6 +54,12 @@ class Face:
 
     def __repr__(self) -> str:
         return "f " + str(self.vertices)
+    
+    def __eq__(self, other: "Face") -> bool:
+        return set(self.vertices) == set(other.vertices)
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.vertices))
 
     def __getitem__(self, item: int) -> np.array:
         """
@@ -127,6 +133,29 @@ class Mesh:
 
     def copy(self) -> "Mesh":
         return copy.deepcopy(self)
+    
+    def clean(self):
+        """
+        A method that gets rid of redundant vertices in the mesh where vertices are redundant if they are not part of any face.
+        This can lead to problems with calculations such as with eulerCharacteristic().
+        As faces refer to vertex indeces though the map has to updated to account for the removal of the redundancy.
+        """
+        verts = list()  # list for non-redundant vertices
+        lookup = dict()  # linking between former and new vertex indices
+
+        # updating the vertex list
+        for face in self.faces:
+            for v in face.vertices:
+                if v in lookup:
+                    continue
+                lookup[v] = len(verts)  # (former index) v -> (new index) latest index of non-redundant list 
+                verts.append(self.vertices[v])
+
+        # updating the faces
+        self.vertices = verts
+        for face in self.faces:
+            face.vertices = [lookup[i] for i in face.vertices]  # update the face links
+        self.faces = list(set(self.faces))  # no duplicate faces
 
     @property
     def v(self) -> int:

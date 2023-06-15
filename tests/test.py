@@ -19,6 +19,16 @@ class TestOrientability(unittest.TestCase):
         self.assertTrue(isOrientable(OBJFile.read("examples/torus.obj")), "torus should be orientable")
 
 
+class TestClean(unittest.TestCase):
+    def test_clean(self):
+        m = Mesh()
+        m.vertices = list(range(100))
+        m.addFace(Face(m, 1, 2, 3))
+        m.addFace(Face(m, 3, 4, 5))
+        m.clean()
+        self.assertEqual(m.v, 5)
+
+
 class TestBoundary(unittest.TestCase):
     def test_boundary(self):
         self.assertFalse(getBoundaryVertices(OBJFile.read("examples/cube.obj")))
@@ -32,7 +42,6 @@ class TestBoundary(unittest.TestCase):
         m.faces = boundaryFaces
         m.vertices = moebius.vertices
         self.assertTrue(isOrientable(m))
-
 
 
 if __name__ == "__main__":
