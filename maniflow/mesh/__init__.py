@@ -54,6 +54,12 @@ class Face:
 
     def __repr__(self) -> str:
         return "f " + str(self.vertices)
+    
+    def __eq__(self, other: "Face") -> bool:
+        return set(self.vertices) == set(other.vertices)
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.vertices))
 
     def __getitem__(self, item: int) -> np.array:
         """
@@ -127,6 +133,22 @@ class Mesh:
 
     def copy(self) -> "Mesh":
         return copy.deepcopy(self)
+    
+    def clean(self):
+        verts = list()
+        lookup = dict()
+
+        for face in self.faces:
+            for v in face.vertices:
+                if v in lookup:
+                    continue
+                lookup[v] = len(verts)
+                verts.append(self.vertices[v])
+
+        self.vertices = verts
+        for face in self.faces:
+            face.vertices = [lookup[i] for i in face.vertices]
+        self.faces = list(set(self.faces))
 
     @property
     def v(self) -> int:
