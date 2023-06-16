@@ -58,7 +58,7 @@ def getBoundaryVertices(mesh: Mesh) -> list[int]:
 
 def coincidingVertices(mesh: Mesh):
     """
-    A method to identify vertices with the same coordinates with each other.
+    A method to identify vertices with the same coordinates with each other [O(V^2)].
     This way we can "clue" edges together that share the same coordinates of technically different vertices.
     The approach is similar to an upper triangle matrix as we don't need to reverse check vertices,
     e.g. v1==v2 doesn't require additional v2==v1 check.

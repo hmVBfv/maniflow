@@ -29,6 +29,17 @@ class TestClean(unittest.TestCase):
         self.assertEqual(m.v, 5)
 
 
+class TestCoinciding(unittest.TestCase):
+    def test_coinciding(self):        
+        mm = OBJFile.read("examples/moebius.obj")
+        bv = getBoundaryVertices(mm)
+        bm = Mesh()
+        bm.vertices = mm.vertices
+        bm.faces = [f for i in bv for f in adjacentFaces(bm, i)]
+        bm.clean()
+        self.assertTrue(isOrientable(bm), "two half-twist moebius strip should be orientable")
+
+
 class TestBoundary(unittest.TestCase):
     def test_boundary(self):
         self.assertFalse(getBoundaryVertices(OBJFile.read("examples/cube.obj")))

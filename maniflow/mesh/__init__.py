@@ -115,7 +115,7 @@ class Mesh:
         """
         self.faces = list()
         self.vertices = list()
-        self._faceGraph = None  # hidden variable that is computed dynamically
+        self.__faceGraph = None  # hidden, private variable that is computed dynamically
 
     def addVertex(self, vertex: np.array):
         self.vertices.append(vertex)
@@ -161,7 +161,7 @@ class Mesh:
         self.resetFaceGraph()
 
     def resetFaceGraph(self):
-        self._faceGraph = None
+        self.__faceGraph = None
 
     @property
     def v(self) -> int:
@@ -202,7 +202,7 @@ class Mesh:
         and the outputs it
         :return: the face graph of the mesh
         """
-        if self._faceGraph is None:
-            self._faceGraph = faceGraph(self)
+        if self.__faceGraph is None:
+            self.__faceGraph = faceGraph(self)
 
-        return self._faceGraph
+        return self.__faceGraph
