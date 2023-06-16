@@ -136,9 +136,10 @@ class Mesh:
     
     def clean(self):
         """
-        A method that gets rid of redundant vertices in the mesh where vertices are redundant if they are not part of any face.
+        A method that gets rid of redundant vertices in the mesh where vertices are redundant
+        if they are not part of any face.
         This can lead to problems with calculations such as with eulerCharacteristic().
-        As faces refer to vertex indeces though the map has to updated to account for the removal of the redundancy.
+        As faces refer to vertex indices though the map has to updated to account for the removal of the redundancy.
         """
         verts = list()  # list for non-redundant vertices
         lookup = dict()  # linking between former and new vertex indices
@@ -151,11 +152,16 @@ class Mesh:
                 lookup[v] = len(verts)  # (former index) v -> (new index) latest index of non-redundant list 
                 verts.append(self.vertices[v])
 
+        if len(lookup) == self.v:
+            return
+
         # updating the faces
         self.vertices = verts
-        for face in self.faces:
-            face.vertices = [lookup[i] for i in face.vertices]  # update the face links
-        self.faces = list(set(self.faces))  # no duplicate faces
+        self.faces = list({Face(self, *[lookup[i] for i in face.vertices]) for face in self.faces})
+        self.resetFaceGraph()
+
+    def resetFaceGraph(self):
+        self._faceGraph = None
 
     @property
     def v(self) -> int:
