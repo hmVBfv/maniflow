@@ -1,4 +1,5 @@
 import functools
+import numpy as np
 from maniflow.mesh import Mesh, Face
 
 
@@ -53,6 +54,38 @@ def getBoundaryVertices(mesh: Mesh) -> list[int]:
     :return: a list of all boundary vertices from the mesh
     """
     return [v for v in range(mesh.v) if isBoundaryVertex(v, mesh)]
+
+
+def coincidingVertices(mesh: Mesh):
+    """
+    A method to identify vertices with the same coordinates with each other [O(V^2)].
+    This way we can "clue" edges together that share the same coordinates of technically different vertices.
+    The approach is similar to an upper triangle matrix as we don't need to reverse check vertices,
+    e.g. v1==v2 doesn't require additional v2==v1 check.
+    :param mesh: the mesh of which vertices should be 
+    """
+    verts = list()
+    lookup = dict()
+
+    for i in range(mesh.v):
+        # i in lookup implies that the i-th vertex is equal some previous i'-th vertex with i'<i
+        # thus was taken care of as i+1+j in the following steps
+        if i in lookup:
+            continue
+        for j in range(mesh.v-i-1):
+            # taken care of in previous iteration of some smaller i
+            if i+1+j in lookup:
+                continue
+            # vertex coordinates are same or at least very close
+            if np.allclose(mesh.vertices[i], mesh.vertices[i+1+j], atol=1e-06):
+                lookup[i+1+j] = len(verts)  # linking to index in new vertex list
+        lookup[i] = len(verts)  # adding i to dict as i not in lookup before (see "if" above)
+        verts.append(mesh.vertices[i])
+
+    # update the faces
+    mesh.vertices = verts
+    mesh.faces = list({Face(mesh, *[lookup[i] for i in face.vertices]) for face in mesh.faces})
+    mesh.resetFaceGraph()
 
 
 def _normal_form(face1: tuple[int], face2: tuple[int]) -> list[tuple[int]]:
