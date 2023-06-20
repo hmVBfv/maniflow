@@ -55,5 +55,20 @@ class TestBoundary(unittest.TestCase):
         self.assertTrue(isOrientable(m))
 
 
+class TestfromFaceList(unittest.TestCase):
+    def test_fromFaceList(self):
+        moebius = OBJFile.read("examples/moebius.obj")
+        subMesh = Mesh.fromFaceList(moebius, 1, 2, 3)
+        for i in range(subMesh.f):
+            self.assertTrue([np.all(moebius.faces[i][j]==subMesh.faces[i][j]) for j in range(len(moebius.faces[i]))])
+
+
+class TestMeshUnion(unittest.TestCase):
+    def test_meshUnion(self):
+        cube = OBJFile.read("examples/cube.obj")
+        cone = OBJFile.read("examples/cone.obj")
+        m = Mesh.union(cube, cone, cube.copy())
+        self.assertEqual(len(connectedComponents(m)), 3)
+
 if __name__ == "__main__":
     unittest.main()

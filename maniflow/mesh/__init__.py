@@ -161,23 +161,29 @@ class Mesh:
         self.resetFaceGraph()
 
     @staticmethod
-    def union(mesh1: "Mesh", mesh2: "Mesh", cleaning=True, coincideVertices=True) -> "Mesh":
+    def union(*meshes: "Mesh", cleaning=True, coincideVertices=True) -> "Mesh":
         """
         A method to combine the mesh with another one and return a new mesh.
-        :param mesh1: first mesh
+        :param meshes[0]: first mesh
         :param mesh2: the second mesh to take the union with
         :param cleaning: whether mesh.cleaning() should be run after taking the union, done by default
         :param coincideVertices: whether coincidingVertices() should be run after the union to identify equivalent
         vertices with each mesh2, done by default
         :return: the mesh of the union of the two meshes
         """
+        if len(meshes) == 1:
+            return meshes[0]
+        
         mesh = Mesh()
 
-        mesh.vertices = mesh1.vertices + mesh2.vertices
-        mesh.faces = mesh1.faces + \
-            list({Face(mesh, *[i+mesh1.v for i in face.vertices]) for face in mesh2.faces})
+        mesh.vertices = meshes[0].vertices + meshes[1].vertices
+        mesh.faces = meshes[0].faces + \
+            list({Face(mesh, *[i+meshes[0].v for i in face.vertices]) for face in meshes[1].faces})
 
-        if cleaning:
+        if len(meshes) > 2:
+            mesh = Mesh.union(mesh, *meshes[2::])
+
+        if cleaning and len(meshes) == 2:
             mesh.clean()
         #if coincideVertices:
         #    coincidingVertices(mesh)
