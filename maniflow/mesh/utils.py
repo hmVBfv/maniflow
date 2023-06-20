@@ -211,9 +211,9 @@ def isOrientable(mesh: Mesh) -> bool:
     A method to determine whether a given mesh is orientable or not.
     In general, a manifold is orientable if there is a non-vanishing continuous normal field.
     To check whether the mesh is orientable or not, we first choose an orientation on the mesh
-    by applying the algorithm from chooseOrientation.
+    by applying the algorithm from pushOrientation.
     Then we traverse each face of the mesh again and check whether the orientations
-    of the faces are really compatible since the traversal in chooseOrientation
+    of the faces are really compatible since the traversal in pushOrientation
     does not guarantee that every adjacent pair of faces is compatible - breadth first traversal
     lets us consider the graph as a tree. In this method we check each pair of adjacent faces.
     If a pair of adjacent faces is not compatible, the mesh is not orientable.

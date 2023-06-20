@@ -2,6 +2,7 @@
 /build
 
 # Folder view configuration files
+.idea/
 .DS_Store
 Desktop.ini
 
