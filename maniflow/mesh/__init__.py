@@ -163,13 +163,12 @@ class Mesh:
     @staticmethod
     def union(*meshes: "Mesh", cleaning=True, coincideVertices=True) -> "Mesh":
         """
-        A method to combine the mesh with another one and return a new mesh.
-        :param meshes[0]: first mesh
-        :param mesh2: the second mesh to take the union with
+        A method to combine a list of meshes and return a new mesh.
+        :param meshes: mesh list to be merged
         :param cleaning: whether mesh.cleaning() should be run after taking the union, done by default
         :param coincideVertices: whether coincidingVertices() should be run after the union to identify equivalent
-        vertices with each mesh2, done by default
-        :return: the mesh of the union of the two meshes
+        vertices, not used for now
+        :return: the mesh of the union of the mesh list
         """
         if len(meshes) == 1:
             return meshes[0]
