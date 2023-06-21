@@ -160,8 +160,48 @@ class Mesh:
         self.faces = list({Face(self, *[lookup[i] for i in face.vertices]) for face in self.faces})
         self.resetFaceGraph()
 
+    @staticmethod
+    def union(*meshes: "Mesh", cleaning=True, coincideVertices=True) -> "Mesh":
+        """
+        A method to combine a list of meshes and return a new mesh.
+        :param meshes: mesh list to be merged
+        :param cleaning: whether mesh.cleaning() should be run after taking the union, done by default
+        :param coincideVertices: whether coincidingVertices() should be run after the union to identify equivalent
+        vertices, not used for now
+        :return: the mesh of the union of the mesh list
+        """
+        if len(meshes) == 1:
+            return meshes[0]
+        
+        mesh = Mesh()
+
+        mesh.vertices = meshes[0].vertices + meshes[1].vertices
+        mesh.faces = meshes[0].faces + \
+            list({Face(mesh, *[i+meshes[0].v for i in face.vertices]) for face in meshes[1].faces})
+
+        if len(meshes) > 2:
+            mesh = Mesh.union(mesh, *meshes[2::])
+
+        if cleaning and len(meshes) == 2:
+            mesh.clean()
+        #if coincideVertices:
+        #    coincidingVertices(mesh)
+        return mesh
+        
     def resetFaceGraph(self):
         self.__faceGraph = None
+
+    @staticmethod
+    def fromFaceList(mesh: "Mesh", *face_index: int) -> "Mesh":
+        m = Mesh()
+
+        if not all([i < mesh.f for i in face_index]):
+            raise IndexError
+        
+        m.faces = list({Face(m, *mesh.faces[i].vertices) for i in face_index})
+        m.vertices = mesh.vertices
+        m.clean()
+        return m
 
     @property
     def v(self) -> int:
