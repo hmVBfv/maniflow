@@ -56,6 +56,17 @@ def getBoundaryVertices(mesh: Mesh) -> list[int]:
     return [v for v in range(mesh.v) if isBoundaryVertex(v, mesh)]
 
 
+def createBoundary(mesh: Mesh):
+    boundaryVertices = getBoundaryVertices(mesh) # Get the boundary vertices of the teapot.
+    boundaryFaces = list([f for i in boundaryVertices for f in adjacentFaces(mesh, i)])
+    # Get the list of faces which are adjacent to the boundary vertices.
+    boundary = Mesh()  # creat a new mesh for the bounary.
+    boundary.faces = boundaryFaces  # Assign the boundary faces to this mesh.
+    boundary.vertices = mesh.vertices  # Assign the all vertices to this mesh.
+
+    return boundary
+
+
 def coincidingVertices(mesh: Mesh):
     """
     A method to identify vertices with the same coordinates with each other [O(V^2)].
@@ -86,6 +97,42 @@ def coincidingVertices(mesh: Mesh):
     mesh.vertices = verts
     mesh.faces = list({Face(mesh, *[lookup[i] for i in face.vertices]) for face in mesh.faces})
     mesh.resetFaceGraph()
+
+
+def addSharedVertices(mesh: Mesh):
+    """
+    A shared vertex between several connected components sometimes can not be easily
+    classified as a boundary vertex or not, since it might be a boundary vertex for
+    one connected components but not for another one.
+    So this method is used to add extra copies for these shared vertices and
+    assign them to different connected components.
+    :param mesh: the mesh which you want to modify.
+    """
+    cc = connectedComponents(mesh)
+    vertices = [] # Contains the vertices for each connected component.
+    shared = [] # Contains the shared vertices between all connected components.
+    copied = [] # Contains the shared vertices that have already been copied.
+    for i in range(len(cc)):
+        n = set().union(*[mesh.faces[f].vertices for f in cc[i]])
+        vertices.append(n)
+        shared += [*n]
+    for s in set(shared):
+        shared.remove(s) # After the removal, the rest are the shared vertices.
+
+    for i in range(len(cc)):
+        v = vertices[i]
+        for j in range(len(shared)):
+            if shared[j] in v:
+                mesh.addVertex(mesh.vertices[shared[j]])
+                # Add a copy of the shared vertex at the end of the vertices list.
+                v = v - {shared[j]} # Remove the changed vertex.
+                for f in cc[i]:
+                    # Change the corresponding faces.
+                    m = [*mesh.faces[f].vertices]
+                    if shared[j] in m:
+                        m[m.index(shared[j])] = mesh.v-1
+                        mesh.faces[f].vertices = tuple(m)
+                shared.remove(shared[j]) # Remove the changed vertex.
 
 
 def _normal_form(face1: tuple[int], face2: tuple[int]) -> list[tuple[int]]:
