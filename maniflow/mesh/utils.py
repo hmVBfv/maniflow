@@ -1,7 +1,7 @@
 import functools
 import numpy as np
 from maniflow.mesh import Mesh, Face
-from maniflow.mesh.obj import OBJFile
+
 
 def isBoundaryVertex(vertex: int, mesh: Mesh) -> bool:
     """
@@ -54,20 +54,6 @@ def getBoundaryVertices(mesh: Mesh) -> list[int]:
     :return: a list of all boundary vertices from the mesh
     """
     return [v for v in range(mesh.v) if isBoundaryVertex(v, mesh)]
-
-
-def createBoundary(mesh: Mesh):
-    """
-    A method to
-    :param mesh: the mesh of which vertices should be
-    """
-    boundaryVertices = getBoundaryVertices(mesh) # Get the boundary vertices of the teapot.
-    boundaryFaces = list([f for i in boundaryVertices for f in adjacentFaces(mesh, i)])
-    # Get the list of faces which are adjacent to the boundary vertices.
-    boundary = Mesh()  # creat a new mesh for the bounary.
-    boundary.faces = boundaryFaces  # Assign the boundary faces to this mesh.
-    boundary.vertices = mesh.vertices  # Assign the all vertices to this mesh.
-    OBJFile.write(boundary, "boundary.obj")  # create the obj file.
 
 
 def coincidingVertices(mesh: Mesh):
@@ -124,7 +110,9 @@ def addSharedVertices(mesh: Mesh):
 
     for i in range(len(cc)):
         v = vertices[i]
-        shared = [element for element in shared if not element in copied]
+        for c in copied:
+            shared.remove(c)
+        copied = []
         for j in range(len(shared)):
             if shared[j] in v:
                 mesh.addVertex(mesh.vertices[shared[j]])
