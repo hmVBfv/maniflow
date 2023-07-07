@@ -114,6 +114,7 @@ class Mesh:
         The vertices of the mesh are stored as numpy arrays in the list vertices.
         """
         self.faces = list()
+        self.edges = list()
         self.vertices = list()
         self.__faceGraph = None  # hidden, private variable that is computed dynamically
 
@@ -122,6 +123,9 @@ class Mesh:
 
     def addFace(self, face: Face):
         self.faces.append(face)
+
+    def addEdge(self, edge: tuple):
+        self.edges.append(edge)
 
     def updateNormals(self):
         """
@@ -225,15 +229,7 @@ class Mesh:
         Syntactic sugar for the computation of the euler characteristic
         :return: the number of edges in the mesh
         """
-        edges = set()
-        for face in self.faces:  # we traverse all faces and consider edges as pairs of vertices
-            for i in range(len(face)):
-                a = face.vertices[i - 1]
-                b = face.vertices[i]
-                if (a, b) not in edges and (b, a) not in edges:  # we need to consider that edges are symmetric
-                    # in a way that (a,b) = (b,a).
-                    edges.add((a, b))  # in this case (a, b) is not yet in the set
-        return len(edges)
+        return len(self.edges)
 
     @property
     def faceGraph(self):

@@ -42,6 +42,17 @@ class OBJFile:
                     vertexIds = list(map(transformId, splitLine[1::]))
                     mesh.addFace(Face(mesh, *vertexIds))  # the face is then added to the mesh
 
+
+        edges = set()
+        for face in mesh.faces:  # we traverse all faces and consider edges as pairs of vertices
+            for i in range(len(face)):
+                a = face.vertices[i - 1]
+                b = face.vertices[i]
+                if (a, b) not in edges and (b, a) not in edges:  # we need to consider that edges are symmetric
+                    # in a way that (a,b) = (b,a).
+                    edges.add((a, b))  # in this case (a, b) is not yet in the set
+        mesh.edges = list(edges)   # the edges are added to the mesh
+
         mesh.updateNormals()  # we finally update the normals of each face
         return mesh
 
