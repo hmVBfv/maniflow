@@ -88,43 +88,54 @@ def coincidingVertices(mesh: Mesh):
     mesh.resetFaceGraph()
 
 
-def addSharedVertices(mesh: Mesh):
+def nonManifoldVertices(mesh: Mesh):
     """
-    A shared vertex between several connected components sometimes can not be easily
-    classified as a boundary vertex or not, since it might be a boundary vertex for
-    one connected components but not for another one.
-    So this method is used to add extra copies for these shared vertices and
-    assign them to different connected components.
-    :param mesh: the mesh which you want to modify.
-    """
-    cc = connectedComponents(mesh)
-    vertices = [] # Contains the vertices for each connected component.
-    shared = [] # Contains the shared vertices between all connected components.
-    copied = [] # Contains the shared vertices that have already been copied.
-    for i in range(len(cc)):
-        n = set().union(*[mesh.faces[f].vertices for f in cc[i]])
-        vertices.append(n)
-        shared += [*n]
-    for s in set(shared):
-        shared.remove(s) # After the removal, the rest are the shared vertices.
+    According to the definition of non-manifold geometry in blender's manual, this function is to
+    modify (remove or add) vertices of a non-manifold mesh, is a part of the process fixing
+    non-manifold mesh (non-manifold to manifold).
+    Here we deal with two kinds of vertices, isolated vertices (vertices which are not part of any
+    faces) & vertices that belong to non-adjacent faces (e.g. two cones shared the same apex). For
+    the first situation we simply apply the clean method defined in mesh class, for the second
+    situation we make copies of the shared vertices and assign them to each face.
+    The name "nonManifoldVertices" is inspired by "coincidingVertices"
 
-    for i in range(len(cc)):
-        v = vertices[i]
-        for c in copied:
-            shared.remove(c)
+    :param mesh: the non-manifold mesh which you want to modify.
+    """
+    mesh.clean() # Remove isolated vertices.
+
+    components = connectedComponents(mesh) # Find the connected components of the mesh.
+    vertices = [] # Contains the vertices for each connected component.
+    shared = []
+    # Contains the shared vertices between all connected components which are exactly
+    # the vertices that belong to non-adjacent faces.
+
+    copied = [] # Contains the shared vertices that have already been copied.
+    for i in range(len(components)):
+        component_vertices = set().union(*[mesh.faces[f].vertices for f in components[i]])
+        vertices.append(component_vertices)
+        shared += [*component_vertices]
+    for vertex in set(shared):
+        shared.remove(vertex)
+        # In each iteration, remove the first matching element from "shared", after the removal,
+        # the rest are the extra shared vertices which need to be copied.
+
+    for i in range(len(components)): # Go through each connected component.
+        component_vertices = vertices[i] # Take its vertices
+        for vertex in copied:
+            shared.remove(vertex) # Already copied vertices should not be copied again.
         copied = []
-        for j in range(len(shared)):
-            if shared[j] in v:
+        for j in range(len(shared)): # Go through each shared vertex.
+            if shared[j] in component_vertices:
                 mesh.addVertex(mesh.vertices[shared[j]])
                 # Add a copy of the shared vertex at the end of the vertices list.
-                v = v - {shared[j]} # Remove the changed vertex.
-                for f in cc[i]:
-                    # Change the corresponding faces.
-                    m = [*mesh.faces[f].vertices]
-                    if shared[j] in m:
-                        m[m.index(shared[j])] = mesh.v-1
-                        mesh.faces[f].vertices = tuple(m)
-                copied.append(shared[j])
+                component_vertices = component_vertices - {shared[j]} # Remove the copied vertex.
+                for face in components[i]:
+                    # Change the vertex indices within the corresponding faces.
+                    face_vertices = [*mesh.faces[face].vertices] # The original vertex indices.
+                    if shared[j] in face_vertices:
+                        face_vertices[face_vertices.index(shared[j])] = mesh.v-1
+                        mesh.faces[face].vertices = tuple(face_vertices) # Give new vertex indices to the face.
+                copied.append(shared[j]) # Record the copied vertices.
 
 
 def _normal_form(face1: tuple[int], face2: tuple[int]) -> list[tuple[int]]:
