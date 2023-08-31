@@ -90,9 +90,8 @@ def coincidingVertices(mesh: Mesh):
 
 def nonManifoldVertices(mesh: Mesh):
     """
-    According to the definition of non-manifold geometry in blender's manual, this function is to
-    modify (remove or add) vertices of a non-manifold mesh, is a part of the process fixing
-    non-manifold mesh (non-manifold to manifold).
+    This function is to modify (remove or add) vertices of a non-manifold mesh,
+    is a part of the process fixing non-manifold mesh (non-manifold to manifold).
     Here we deal with two kinds of vertices, isolated vertices (vertices which are not part of any
     faces) & vertices that belong to non-adjacent faces (e.g. two cones shared the same apex). For
     the first situation we simply apply the clean method defined in mesh class, for the second
