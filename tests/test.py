@@ -40,11 +40,27 @@ class TestCoinciding(unittest.TestCase):
         self.assertTrue(isOrientable(bm), "two half-twist moebius strip should be orientable")
 
 
+class TestNonManifoldVertices(unittest.TestCase):
+    def test_non_manifold_vertices(self):
+        mesh = OBJFile.read("examples/non_manifold.obj")
+        self.assertEqual(mesh.v, 17)
+        nonManifoldVertices(mesh)
+        self.assertEqual(mesh.v, 20)
+        components = connectedComponents(mesh)
+        shared = []    # Contains the shared vertices that belong to non-adjacent faces.
+        for i in range(len(components)):
+            component_vertices = set().union(*[mesh.faces[f].vertices for f in components[i]])
+            shared += [*component_vertices]
+        for vertex in set(shared):
+            shared.remove(vertex)
+        self.assertEqual(len(shared), 0)
+
+
 class TestBoundary(unittest.TestCase):
     def test_boundary(self):
         self.assertFalse(getBoundaryVertices(OBJFile.read("examples/cube.obj")))
         self.assertFalse(getBoundaryVertices(OBJFile.read("examples/cone.obj")))
-        # testing if the boundary of the moebius stip (the two half-twist moebius strip) is orientable
+        # testing if the boundary of the moebius strip (the two half-twist moebius strip) is orientable
         moebius = OBJFile.read("examples/moebius.obj")
         boundaryVertices = getBoundaryVertices(moebius)
         self.assertTrue(boundaryVertices)  # the boundary vertices are not an empty list

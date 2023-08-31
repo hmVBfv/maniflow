@@ -21,8 +21,6 @@ def moebius(vertex):
 
 u = Grid((0, 2 * np.pi), (-1, 1), 30, 10)  # create a high resolution grid
 moebiusMesh = moebius(u)  # mapping the vertices from the grid according to the parametrisation
-coincidingVertices(moebiusMesh) # remove the redundant vertices at the joint after making the moebius band
-print(eulerCharacteristic(moebiusMesh)) # verify it is a real moebius band (expected value 0)
 OBJFile.write(moebiusMesh, "moebius.obj")  # writing the mesh data to the file 'moebius.obj'
 ```
 The .obj file created by this code can be loaded into ![Blender](https://www.blender.org/):
