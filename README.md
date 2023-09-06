@@ -1,5 +1,9 @@
 # Scientific computing
 
+Example of a rendered mesh:
+
+![](doc/tea.png)
+
 ## Generating a mesh from a given parametrisation
 
 The example given here will create a moebius strip. We'll demonstrate this using the following code:
