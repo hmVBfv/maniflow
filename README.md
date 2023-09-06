@@ -2,7 +2,7 @@
 
 Example of a rendered mesh:
 
-<img src="doc/tea.png" alt="render" width="500"/>
+<img src="doc/tea.png" alt="render" width="700"/>
 
 ## Generating a mesh from a given parametrisation
 
