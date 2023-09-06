@@ -26,18 +26,33 @@ def test_shader(face):
     return dict(fill=color, opacity=200, stroke=[0, 0, 0, 200])
     #return None
 
-def mixedColor(colorA, colorB):
-    colorB = np.array(colorB)
-    colorB[:3:] = 255 * np.ones(3) - colorB[:3:]
-    color = np.array([0, 0, 0, 0])
-    #color[:3:] = 255 * np.ones(3) - np.sqrt(((255 * np.ones(3) - colorA[:3:] * colorA[3] / 255) ** 2 +
-    #                                         (255 * np.ones(3) - np.array(colorB[:3:]) * colorB[3] / 255) ** 2) / 2)
-    # color[:3:] = 255 * np.ones(3) - ((255*np.ones(3) - colorA[3] * colorA[:3:]/255) + (255*np.ones(3) - colorB[3] * np.array(colorB[:3:])/255))/2
-    color[:3:] = np.sqrt((colorA[:3:]**2 + colorB[:3:]**2)/2)
-    color[3] = colorA[3] + colorB[3]
-    color[color > 255] = 255
-    color[color < 0] = 0
-    return color
+
+def mixedColor(imageBuffer: np.array, color: np.array) -> np.array:
+    """
+    This method implements subtractive color mixing for RGBA colors (or rather it
+    is a heuristic to approach the problem since there are no physical models
+    that accurately implement this)
+    RGBA naturally supports additive color mixing but for translucent colored layers that we want to
+    stack on top of each other we want subtractive color mixing - the colors should get darker
+    each time layers are stacked. Or to put it in other words: if faces overlap in the resulting
+    rendered image we want their colors to mix so that the resulting color is darker than the colors we started
+    with. The opacity should be the sum of both of the opacities of the faces (constrained to 255).
+
+    :param imageBuffer: the color of the image buffer at some pixel in the rendered image
+    :param color: the color of a (new) polygon that is to be added to the rendered scene
+    :return: the mixed color of both input colors,
+    """
+    color = np.array(color)
+    color[:3:] = 255 * np.ones(3) - color[:3:]  # we first 'invert' the colorB
+    result = np.array([0, 0, 0, 0])
+    result[:3:] = np.sqrt((imageBuffer[:3:] ** 2 + color[:3:] ** 2) / 2)  # we sort of mix the colors
+    # not just by their average but according to some other formula I came up with that seemed to work nicely...
+    # this formula 'blends' the colors better
+    result[3] = imageBuffer[3] + color[3]  # we add the opacities of the colors
+    # now we apply the constraints
+    result[result > 255] = 255
+
+    return result
 
 
 def baryCentricCoordinates(a: np.array, b: np.array, c: np.array, x: int, y: int) -> np.array:
@@ -87,28 +102,35 @@ def getBoundingBox(a: np.array, b: np.array, c: np.array) -> list[list[float]]:
             [max([xx[0] for xx in [a, b, c]]), max([yy[1] for yy in [a, b, c]])]]
 
 
-def rasterizeLine(x0, y0, x1, y1, color, img):
-    # Bresenham's line algorithm (wiki)
+def rasterizeLine(x0: int, y0: int, x1: int, y1: int, color: np.array, img: np.array) -> np.array:
+    """
+    This method implements Bresenham's line algorithm
+    (see: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
+    The implementation is basically taken from the wikipedia page
+    (but of course translated into python).
+
+    Bresenham's line algorithm is an algorithm used for drawing lines from the point (x0,y0)
+    to (x1,y1) on a raster.
+    The algorithm finds a close approximation of the line and maps it to the image buffer (img).
+    :param x0: the x component of the starting point of the line
+    :param y0: the y component of the starting point of the line
+    :param x1: the x component of the end point of the line
+    :param y1: the y component of the end point of the line
+    :param color: the color (RGBA) with which the line is to be drawn
+    :param img: the image buffer
+    :return: the image buffer with the line rendered
+    """
+
     dx = abs(x1 - x0)
     dy = -abs(y1 - y0)
     sx = 1 if x0 < x1 else -1
     sy = 1 if y0 < y1 else -1
     error = dx + dy
-    e2 = 0
 
     while True:
         try:
             img[x0][y0] = mixedColor(img[x0][y0], color)
-            # img[x0][y0] = [0,0,0,255]#color
-            # img[x0][y0][:3:] = 255 * np.ones(3) - np.sqrt(
-            #    ((255 * np.ones(3) - img[x0][y0][:3:] * img[x0][y0][3] / 255) ** 2 +
-            #     (255 * np.ones(3) - np.array(color[:3:]) * color[
-            #         3] / 255) ** 2) / 2)
-            # img[x0][y0][3] = img[x0][y0][3] + color[3] if img[x0][y0][3] + color[3] <= 255 else 255
-            # img[x0][y0][:3:] = 255 * np.ones(3) - (500 * np.ones(3) - (img[x0][y0][:3:]) - np.array(color[:3:])) / 2
-            # img[x0][y0][3] = img[x0][y0][3] + color[3] if img[x0][y0][3] + color[3] <= 255 else 255
         except Exception as e:
-            # print("hello! i am under the water. please help me")
             pass
         if x0 == x1 and y0 == y1:
             break
@@ -158,20 +180,41 @@ def rasterizeTriangle(a: np.array, b: np.array, c: np.array, color: np.array, im
     return img
 
 
-def rasterizePolygon(face, image, fill=[255, 255, 255], opacity=255, stroke=[0, 0, 0, 255]):
-    fill = list(fill)
-    fill.append(opacity)
-    if len(face) == 3:
-        image = rasterizeTriangle(face[0], face[1], face[2], color=fill, img=image)
-    if len(face) == 4:
-        image = rasterizeTriangle(face[0], face[1], face[2], color=fill, img=image)
-        image = rasterizeTriangle(face[0], face[3], face[2], color=fill, img=image)
+def rasterizePolygon(polygon: list[np.array], image: np.array, fill: np.array = None,
+                     opacity: int = 255, stroke: np.array = None):
+    """
+    A method to either rasterize a triangle or a quadrilateral.
+    The quadrilateral is broken down into two triangles.
 
-    pp = face[0]
-    for p in face[1::]:
+    :param polygon: a list of points that make up the corners of the polygon
+    :param image: the image buffer
+    :param fill: an RGB color with which the polygon is to be painted
+    :param opacity: the opacity for the rasterized polygon
+    :param stroke: the RGBA color with which the edge of the polygon should be painted
+    :return: the image buffer with the rendered polygon
+    """
+
+    if fill is not None and opacity != 0:
+        fill = list(fill)
+        fill.append(opacity)  # we construct the RGBA color from the specified values of fill and opacity
+        if len(polygon) == 3:
+            # in this case we simply rasterize a triangle
+            image = rasterizeTriangle(polygon[0], polygon[1], polygon[2], color=fill, img=image)
+        if len(polygon) == 4:
+            # in this case we rasterize two triangles that make up the quadrilateral
+            image = rasterizeTriangle(polygon[0], polygon[1], polygon[2], color=fill, img=image)
+            image = rasterizeTriangle(polygon[0], polygon[3], polygon[2], color=fill, img=image)
+
+    if stroke is None:
+        return image  # if there is no stroke color specified we are done
+
+    # we now rasterize the edges of the polygon using Bresenham's line algorithm
+    pp = polygon[0]
+    for p in polygon[1::]:
         image = rasterizeLine(int(pp[0]), int(pp[1]), int(p[0]), int(p[1]), color=stroke, img=image)
         pp = p
-    image = rasterizeLine(int(face[0][0]), int(face[0][1]), int(face[-1][0]), int(face[-1][1]), color=stroke, img=image)
+    image = rasterizeLine(int(polygon[0][0]), int(polygon[0][1]), int(polygon[-1][0]),
+                          int(polygon[-1][1]), color=stroke, img=image)
 
     return image
 
@@ -204,7 +247,7 @@ class Render:
 
     def render(self, mesh: Mesh):
         #image = np.zeros((500, 500, 4))
-        image = np.zeros((1080, 1080, 3))
+        image = np.zeros((500, 500, 3))
         image = np.dstack([image, 255 * np.zeros(image.shape[:2])])
         # creating one array from the mesh. Encoding all of its geometry into it
         verts = np.float32(list(map(tuple, mesh.vertices)))
@@ -242,8 +285,10 @@ class Render:
             if style is None:
                 continue
             image = rasterizePolygon(face, image, **style)
+
         for x in range(len(image)):
             for y in range(len(image[0])):
                 image[x][y][:3:] = np.array([255,255,255]) - image[x][y][:3:]
+
         iimage = Image.fromarray(image.transpose((1, 0, 2)).astype(np.uint8), "RGBA")
         iimage.save("testing2.png")
