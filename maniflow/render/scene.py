@@ -7,24 +7,37 @@ from tqdm import tqdm
 
 
 def test_shader(face):
-    shininess = 200
-    L = pyrr.vector.normalize(np.float32([15,10,15]))  # 10,-10,50
-    E = np.float32([0,0,1])
+    shininess = 75
+    L = pyrr.vector.normalize(np.float32([15, 10, 15]))  # 10,-10,50
+    E = np.float32([0, 0, 1])
     H = pyrr.vector.normalize(L + E)
     p0, p1, p2 = face[0], face[1], face[2]
     N = pyrr.vector.normalize(pyrr.vector3.cross(p1 - p0, p2 - p0))
-    ff = pyrr.vector.normalize(np.array([0,0,0]) + L)
+    ff = pyrr.vector.normalize(np.array([0, 0, 0]) + L)
     if np.dot(ff, N) < 0:
-
-        return dict(fill=[252, 185, 15], opacity=100, stroke=[100,100,100,50])
+        return dict(fill=[170, 0, 255], opacity=100, stroke=[10, 10, 10, 10])
         #return None
     # print(N)
     df = max(0, np.dot(N, L))
     sf = pow(max(0, np.dot(N, H)), shininess)
-    color = df * np.float32([1, 0.72, 0.05]) + sf * np.float32([1, 1, 1])
+    color = df * np.float32([0.5, 0, 1]) + sf * np.float32([1, 1, 1])
     color = np.power(color, 1.0 / 2.2)
     color *= 255
-    return dict(fill=color, opacity=200, stroke=[100,100,100,200])
+    return dict(fill=color, opacity=200, stroke=[0, 0, 0, 200])
+    #return None
+
+def mixedColor(colorA, colorB):
+    colorB = np.array(colorB)
+    colorB[:3:] = 255 * np.ones(3) - colorB[:3:]
+    color = np.array([0, 0, 0, 0])
+    #color[:3:] = 255 * np.ones(3) - np.sqrt(((255 * np.ones(3) - colorA[:3:] * colorA[3] / 255) ** 2 +
+    #                                         (255 * np.ones(3) - np.array(colorB[:3:]) * colorB[3] / 255) ** 2) / 2)
+    # color[:3:] = 255 * np.ones(3) - ((255*np.ones(3) - colorA[3] * colorA[:3:]/255) + (255*np.ones(3) - colorB[3] * np.array(colorB[:3:])/255))/2
+    color[:3:] = np.sqrt((colorA[:3:]**2 + colorB[:3:]**2)/2)
+    color[3] = colorA[3] + colorB[3]
+    color[color > 255] = 255
+    color[color < 0] = 0
+    return color
 
 
 def baryCentricCoordinates(a: np.array, b: np.array, c: np.array, x: int, y: int) -> np.array:
@@ -38,6 +51,7 @@ def baryCentricCoordinates(a: np.array, b: np.array, c: np.array, x: int, y: int
     :param y: the y component of the cartesian coordinates of the points
     :return: the barycentric coordinates of the given points with respect to the triangle
     """
+
     point = np.array([x, y])  # representing the point as a numpy array
     edge1 = b - a  # computing to edges of the triangle
     edge2 = c - a
@@ -68,6 +82,7 @@ def getBoundingBox(a: np.array, b: np.array, c: np.array) -> list[list[float]]:
     :return: a list that consists of the coordinates of two
     points that 'span' the bounding box.
     """
+
     return [[min([xx[0] for xx in [a, b, c]]), min([yy[1] for yy in [a, b, c]])],
             [max([xx[0] for xx in [a, b, c]]), max([yy[1] for yy in [a, b, c]])]]
 
@@ -83,13 +98,15 @@ def rasterizeLine(x0, y0, x1, y1, color, img):
 
     while True:
         try:
+            img[x0][y0] = mixedColor(img[x0][y0], color)
             # img[x0][y0] = [0,0,0,255]#color
-            img[x0][y0][:3:] = 255 * np.ones(3) - np.sqrt(((255 * np.ones(3) - img[x0][y0][:3:] * img[x0][y0][3] / 255) ** 2 +
-                                                         (255 * np.ones(3) - np.array(color[:3:]) * color[
-                                                             3] / 255) ** 2) / 2)
-            img[x0][y0][3] = img[x0][y0][3] + color[3] if img[x0][y0][3] + color[3] <= 255 else 255
-            #img[x0][y0][:3:] = 255 * np.ones(3) - (500 * np.ones(3) - (img[x0][y0][:3:]) - np.array(color[:3:])) / 2
-            #img[x0][y0][3] = img[x0][y0][3] + color[3] if img[x0][y0][3] + color[3] <= 255 else 255
+            # img[x0][y0][:3:] = 255 * np.ones(3) - np.sqrt(
+            #    ((255 * np.ones(3) - img[x0][y0][:3:] * img[x0][y0][3] / 255) ** 2 +
+            #     (255 * np.ones(3) - np.array(color[:3:]) * color[
+            #         3] / 255) ** 2) / 2)
+            # img[x0][y0][3] = img[x0][y0][3] + color[3] if img[x0][y0][3] + color[3] <= 255 else 255
+            # img[x0][y0][:3:] = 255 * np.ones(3) - (500 * np.ones(3) - (img[x0][y0][:3:]) - np.array(color[:3:])) / 2
+            # img[x0][y0][3] = img[x0][y0][3] + color[3] if img[x0][y0][3] + color[3] <= 255 else 255
         except Exception as e:
             # print("hello! i am under the water. please help me")
             pass
@@ -118,10 +135,11 @@ def rasterizeTriangle(a: np.array, b: np.array, c: np.array, color: np.array, im
     and check whether it lies within the triangle. The point is in the triangle
     iff all components of the barycentric coordinates of that point with respect to the
     triangle are positive.
+
     :param a: a corner point of the triangle
     :param b: a corner point of the triangle
     :param c: a corner point of the triangle
-    :param color: a RGBA color
+    :param color: an RGBA color represented by an array consisting of four bytes
     :param img: the image buffer
     :return: the image buffer with the rasterized triangle
     """
@@ -135,21 +153,12 @@ def rasterizeTriangle(a: np.array, b: np.array, c: np.array, color: np.array, im
                 continue
 
             # if the point lies within the image buffer and in the triangle we apply the color to it
-            if np.all(img[x][y] == 0):
-                img[x][y] = np.array(color)
-            else:
-                img[x][y][:3:] = 255 * np.ones(3) - np.sqrt(((255 * np.ones(3) - img[x][y][:3:]*img[x][y][3]/255)**2 +
-                                                            (255 * np.ones(3) - np.array(color[:3:])*color[3]/255)**2) / 2)
-                #print(img[x][y][:3:])
-                #img[x][y][:3:] = 255 * np.ones(3) - (500 * np.ones(3) - (img[x][y][:3:]) - np.array(color[:3:]))/2
-                img[x][y][3] = img[x][y][3] + color[3] if img[x][y][3] + color[3] <= 255 else 255
-                #img[x][y] = np.array(color)
+            img[x][y] = mixedColor(img[x][y], color)
 
     return img
 
 
-def rasterizePolygon(face, image, fill=[255,255,255], opacity=255, stroke=[0,0,0,255]):
-
+def rasterizePolygon(face, image, fill=[255, 255, 255], opacity=255, stroke=[0, 0, 0, 255]):
     fill = list(fill)
     fill.append(opacity)
     if len(face) == 3:
@@ -169,7 +178,7 @@ def rasterizePolygon(face, image, fill=[255,255,255], opacity=255, stroke=[0,0,0
 
 class Camera:
     def __init__(self, position: np.array, target: np.array = (0, 0, 0), up: np.array = (0, 1, 0),
-                 fovy: float = 15, aspect: float = 1.5, near: float = 10, far: float = 200):
+                 fovy: float = 15, aspect: float = 1, near: float = 10, far: float = 200):
         """
         Initializes a new pinhole camera with the given parameters.
         :param position: A numpy array (3d) where the camera is located
@@ -194,13 +203,15 @@ class Render:
         self.camera = camera
 
     def render(self, mesh: Mesh):
-        image = np.zeros((1080, 720, 4))
+        #image = np.zeros((500, 500, 4))
+        image = np.zeros((1080, 1080, 3))
+        image = np.dstack([image, 255 * np.zeros(image.shape[:2])])
         # creating one array from the mesh. Encoding all of its geometry into it
         verts = np.float32(list(map(tuple, mesh.vertices)))
         getids = lambda face: tuple(face.vertices)
         faces = np.int32(list(map(getids, mesh.faces)))
         faces = verts[faces]
-        faces *= 0.45
+        faces *= 1.2
         Faces = faces.copy()
         faces = np.dstack([faces, np.ones(faces.shape[:2])])
         faces = np.dot(faces, self.camera.projection)
@@ -231,6 +242,8 @@ class Render:
             if style is None:
                 continue
             image = rasterizePolygon(face, image, **style)
-
+        for x in range(len(image)):
+            for y in range(len(image[0])):
+                image[x][y][:3:] = np.array([255,255,255]) - image[x][y][:3:]
         iimage = Image.fromarray(image.transpose((1, 0, 2)).astype(np.uint8), "RGBA")
         iimage.save("testing2.png")
