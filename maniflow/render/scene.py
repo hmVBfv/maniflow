@@ -165,6 +165,7 @@ def rasterizeTriangle(a: np.array, b: np.array, c: np.array, color: np.array, im
     :param img: the image buffer
     :return: the image buffer with the rasterized triangle
     """
+
     box = getBoundingBox(a, b, c)
     for x in range(int(np.floor(box[0][0])), int(np.ceil(box[1][0]))):  # we scan every point (x,y) in the bounding box
         for y in range(int(np.floor(box[0][1])), int(np.ceil(box[1][1]))):
@@ -181,7 +182,7 @@ def rasterizeTriangle(a: np.array, b: np.array, c: np.array, color: np.array, im
 
 
 def rasterizePolygon(polygon: list[np.array], image: np.array, fill: np.array = None,
-                     opacity: int = 255, stroke: np.array = None):
+                     opacity: int = 255, stroke: np.array = None, *args, **kwargs):
     """
     A method to either rasterize a triangle or a quadrilateral.
     The quadrilateral is broken down into two triangles.
@@ -231,14 +232,32 @@ class Camera:
         :param aspect: the aspect ratio
         :param far: the far plane
         """
+
+        self.position = position
+        self.target = target
+        self.up = up
+        self.fovy = fovy
+        self.aspect = aspect
+        self.near = near
+        self.far = far
         view = pyrr.matrix44.create_look_at(
             eye=position, target=target, up=up
         )
         projection = pyrr.matrix44.create_perspective_projection(
             fovy=fovy, aspect=aspect, near=near, far=far
         )
+        # projection = self.getPerspectiveMatrix(fovy, aspect, near, far)
 
         self.projection = np.dot(view, projection)
+
+    def getPerspectiveMatrix(self, fovy, aspect, near, far):
+        f = 1 / np.tan(fovy / 2)
+        g = (far + near) / (near - far)
+        h = (2 * far * near) / (near - far)
+        return np.array([[f / aspect, 0, 0, 0],
+                         [0, f, 0, 0],
+                         [0, 0, g, h],
+                         [0, 0, -1, 0]])
 
 
 class Render:
@@ -246,9 +265,9 @@ class Render:
         self.camera = camera
 
     def render(self, mesh: Mesh):
-        #image = np.zeros((500, 500, 4))
         image = np.zeros((500, 500, 3))
         image = np.dstack([image, 255 * np.zeros(image.shape[:2])])
+
         # creating one array from the mesh. Encoding all of its geometry into it
         verts = np.float32(list(map(tuple, mesh.vertices)))
         getids = lambda face: tuple(face.vertices)
@@ -256,10 +275,9 @@ class Render:
         faces = verts[faces]
         faces *= 1.2
         Faces = faces.copy()
+
         faces = np.dstack([faces, np.ones(faces.shape[:2])])
         faces = np.dot(faces, self.camera.projection)
-        xyz, w = faces[:, :, :3], faces[:, :, 3:]
-        # Apply perspective transformation.
         xyz, w = faces[:, :, :3], faces[:, :, 3:]
         faces = xyz / w
 
@@ -268,19 +286,19 @@ class Render:
         for i in range(len(centroids)):
             centroids[i] /= len(faces[i])
         centroids = centroids.ravel()
-        # print(centroids)
         face_indices = np.argsort(centroids)
         faces = faces[face_indices]
         Faces = Faces[face_indices]
-        # print(faces)
-        # faces = faces[face_indices]
 
+        # scale the resulting points
         faces[:, :, 0:1] = (1.0 + faces[:, :, 0:1]) * image.shape[0] / 2
         faces[:, :, 1:2] = (1.0 - faces[:, :, 1:2]) * image.shape[1] / 2
+
+        # ---- the .png renderer (slow as f**k)
+        # rendering the faces
         print(len(faces))
         for i, face in tqdm(enumerate(faces)):
             face = np.around(face[:, :2], 5)
-            # image = rasterizeTriangle(face[0], face[1], face[2], color=[255, 255, 255, 100], img=image)
             style = test_shader(Faces[i])
             if style is None:
                 continue
@@ -292,3 +310,4 @@ class Render:
 
         iimage = Image.fromarray(image.transpose((1, 0, 2)).astype(np.uint8), "RGBA")
         iimage.save("testing2.png")
+        # ----
