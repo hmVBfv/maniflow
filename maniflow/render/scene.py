@@ -1,6 +1,11 @@
+import abc
+
+import drawsvg
+
 from maniflow.mesh import Mesh
 import pyrr  # TODO: get rid of pyrr. It is only used to compute the projection matrix...
 import numpy as np
+from abc import ABC
 from PIL import Image, ImageDraw
 import drawsvg as draw
 
@@ -33,6 +38,7 @@ def test_shader(face):
 def rgbToHex(r: int, g: int, b: int) -> str:
     """
     A method to convert a given RGB color to its corresponding hex code
+    (see: https://stackoverflow.com/questions/3380726/converting-an-rgb-color-tuple-to-a-hexidecimal-string)
     :param r: the red channel of the color
     :param g: the green channel of the color
     :param b: the blue channel of the color
@@ -274,11 +280,11 @@ class Camera:
                          [0, 0, -1, 0]])
 
 
-class Render:
+class Renderer(ABC):
     def __init__(self, camera: Camera):
         self.camera = camera
 
-    def render(self, mesh: Mesh, fname):
+    def projectFaces(self, mesh: Mesh):
         # creating one array from the mesh. Encoding all of its geometry into it
         verts = np.float32(list(map(tuple, mesh.vertices)))
         getids = lambda face: tuple(face.vertices)
@@ -305,13 +311,25 @@ class Render:
         faces[:, :, 0:1] = (1.0 + faces[:, :, 0:1]) * 1080 / 2 # width
         faces[:, :, 1:2] = (1.0 - faces[:, :, 1:2]) * 1080 / 2 # height
 
-        self.paint(faces, eyespaceFaces, 1080, 1080, fname)
+        # self.raster(faces, eyespaceFaces, 500, 500, fname)
+        return faces, eyespaceFaces
 
-    @staticmethod
-    def raster(projectedFaces, eyespaceFaces, width, height, fname):
-        image = np.zeros((width, height, 3))
-        image = np.dstack([image, 255 * np.zeros(image.shape[:2])])
-        # ---- the .png renderer (slow as f**k)
+    @abc.abstractmethod
+    def render(self, mesh):
+        pass
+
+
+class RasterRenderer(Renderer):
+    def __init__(self, camera):
+        super().__init__(camera)
+
+    def render(self, mesh) -> Image:
+        width, height = 1080, 1080  # temporary
+
+        projectedFaces, eyespaceFaces = self.projectFaces(mesh)
+        imageBuffer = np.zeros((width, height, 3))
+        imageBuffer = np.dstack([imageBuffer, 255 * np.zeros(imageBuffer.shape[:2])])
+
         # rendering the faces
         print(len(projectedFaces))
         for i, face in tqdm(enumerate(projectedFaces)):
@@ -319,17 +337,25 @@ class Render:
             style = test_shader(eyespaceFaces[i])
             if style is None:
                 continue
-            image = rasterizePolygon(face, image, **style)
+            imageBuffer = rasterizePolygon(face, imageBuffer, **style)
 
-        for x in range(len(image)):
-            for y in range(len(image[0])):
-                image[x][y][:3:] = np.array([255, 255, 255]) - image[x][y][:3:]
+        # we invert the colors again to achieve subtractive color mixing
+        for x in range(len(imageBuffer)):
+            for y in range(len(imageBuffer[0])):
+                imageBuffer[x][y][:3:] = np.array([255, 255, 255]) - imageBuffer[x][y][:3:]
 
-        iimage = Image.fromarray(image.transpose((1, 0, 2)).astype(np.uint8), "RGBA")
-        iimage.save(fname)
+        image = Image.fromarray(imageBuffer.transpose((1, 0, 2)).astype(np.uint8), "RGBA")
+        return image
 
-    @staticmethod
-    def paint(projectedFaces, eyespaceFaces, width, height, fname):
+
+class PainterRenderer(Renderer):
+    def __init__(self, camera):
+        super().__init__(camera)
+
+    def render(self, mesh) -> Image:
+        width, height = 1080, 1080  # temporary
+
+        projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         image = Image.new("RGBA", (width, height))
         draw = ImageDraw.Draw(image)
         for i, face in tqdm(enumerate(projectedFaces)):
@@ -338,23 +364,35 @@ class Render:
             style['fill'] = tuple(list(style['fill']) + [style['opacity']])
             if style is None:
                 continue
-            draw.polygon(xy=[tuple(i) for i in face], fill=tuple([int(i) for i in style['fill']]), outline=(0,0,0,255))
+            draw.polygon(xy=[tuple(i) for i in face], fill=tuple([int(i) for i in style['fill']]),
+                         outline=(0, 0, 0, 255))
 
-        image.save(fname)
+        return image
 
-    @staticmethod
-    def paint_svg(projectedFaces, eyespaceFaces, width, height, fname):
+
+class SVGPainterRenderer(Renderer):
+    def __init__(self, camera):
+        super().__init__(camera)
+
+    def render(self, mesh) -> "drawsvg.Drawing":
+        try:
+            import drawsvg as draw
+        except ModuleNotFoundError as error:
+            raise error
+
+        width, height = 1080, 1080  # temporary
+
+        projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         drawing = draw.Drawing(width, height)
         for i, face in tqdm(enumerate(projectedFaces)):
             face = np.around(face[:, :2], 5)
             style = test_shader(eyespaceFaces[i])
-            dstyle = dict(fill = rgbToHex(*[int(i) for i in style['fill']]),
-                          fill_opacity=style['opacity']/255, stroke=rgbToHex(*[int(i) for i in style['stroke'][:3:]]),
+            dstyle = dict(fill=rgbToHex(*[int(i) for i in style['fill']]),
+                          fill_opacity=style['opacity'] / 255, stroke=rgbToHex(*[int(i) for i in style['stroke'][:3:]]),
                           stroke_width="0,001")
 
             if style is None:
                 continue
             drawing.append(draw.Lines(*list(face.ravel()), close=True, **dstyle))
-            drawing.save_svg(fname)
 
-
+        return drawing
