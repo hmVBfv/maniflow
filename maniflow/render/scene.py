@@ -1,5 +1,5 @@
 import numpy as np
-from typing import NamedTuple, Sequence
+from typing import NamedTuple
 from maniflow.render.camera import Camera
 
 
