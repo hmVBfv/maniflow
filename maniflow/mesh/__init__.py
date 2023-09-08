@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 from maniflow.utils.graph import Graph
+from maniflow.render.scene import RenderObject
 
 
 def faceGraph(mesh: "Mesh") -> Graph:
@@ -103,7 +104,7 @@ class Face:
         self.setNormal(normal / np.linalg.norm(normal))
 
 
-class Mesh:
+class Mesh(RenderObject):
     """
     A class represent and store mesh data. Meshes consist of faces and vertices.
     """
@@ -113,6 +114,8 @@ class Mesh:
         The faces of the mesh are stored as objects of the Face class in the list faces.
         The vertices of the mesh are stored as numpy arrays in the list vertices.
         """
+        super().__init__()
+
         self.faces = list()
         self.vertices = list()
         self.__faceGraph = None  # hidden, private variable that is computed dynamically

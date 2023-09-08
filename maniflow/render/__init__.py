@@ -4,33 +4,9 @@ from PIL import Image, ImageDraw
 from maniflow.mesh import Mesh
 from maniflow.render.camera import Camera
 from maniflow.render.raster import *
+from maniflow.render.scene import *
 
 from tqdm import tqdm
-
-import pyrr
-
-
-def test_shader(face):
-    shininess = 75
-    L = pyrr.vector.normalize(np.float32([15, 10, 15]))  # 10,-10,50
-    E = np.float32([0, 0, 1])
-    H = pyrr.vector.normalize(L + E)
-    p0, p1, p2 = face[0], face[1], face[2]
-    N = pyrr.vector.normalize(pyrr.vector3.cross(p1 - p0, p2 - p0))
-    ff = pyrr.vector.normalize(np.array([0, 0, 0]) + L)
-    if np.dot(ff, N) < 0:
-        return dict(fill=[170, 0, 255], opacity=150, stroke=[10, 10, 10, 10])
-       # return dict(fill=[0, 0, 255], opacity=150, stroke=[10, 10, 10, 10])
-        #return None
-    # print(N)
-    df = max(0, np.dot(N, L))
-    sf = pow(max(0, np.dot(N, H)), shininess)
-    color = df * np.float32([0.5, 0, 1]) + sf * np.float32([1, 1, 1])
-    color = np.power(color, 1.0 / 2.2)
-    color *= 255
-    color[color > 255] = 255
-    color[color < 0] = 0
-    return dict(fill=color, opacity=200, stroke=[0, 0, 0, 200])
 
 
 def rgbToHex(r: int, g: int, b: int) -> str:
@@ -51,8 +27,8 @@ class Renderer(ABC):
     A class to create a sort of blueprint of what capabilities a renderer should have.
     This way the code is far more modular.
     """
-    def __init__(self, camera: Camera):
-        self.camera = camera
+    def __init__(self, scene: Scene):
+        self.scene = scene
 
     def projectFaces(self, mesh: Mesh) -> (np.array, np.array):
         """
@@ -75,7 +51,7 @@ class Renderer(ABC):
         eyespaceFaces = faces.copy()
 
         faces = np.dstack([faces, np.ones(faces.shape[:2])])
-        faces = np.dot(faces, self.camera.projection)
+        faces = np.dot(faces, self.scene.camera.projection)
         xyz, w = faces[:, :, :3], faces[:, :, 3:]
         faces = xyz / w
 
@@ -89,8 +65,8 @@ class Renderer(ABC):
         eyespaceFaces = eyespaceFaces[face_indices]
 
         # scale the resulting points
-        faces[:, :, 0:1] = (1.0 + faces[:, :, 0:1]) * 1080 / 2 # width
-        faces[:, :, 1:2] = (1.0 - faces[:, :, 1:2]) * 1080 / 2 # height
+        faces[:, :, 0:1] = (1.0 + faces[:, :, 0:1]) * self.scene.width / 2 # width
+        faces[:, :, 1:2] = (1.0 - faces[:, :, 1:2]) * self.scene.height / 2 # height
 
         return faces, eyespaceFaces
 
@@ -100,11 +76,11 @@ class Renderer(ABC):
 
 
 class RasterRenderer(Renderer):
-    def __init__(self, camera):
-        super().__init__(camera)
+    def __init__(self, scene: Scene):
+        super().__init__(scene)
 
-    def render(self, mesh) -> "PIL.Image":
-        width, height = 1080, 1080  # temporary
+    def render(self, mesh: Mesh) -> "PIL.Image":
+        width, height = self.scene.width, self.scene.height  # temporary
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         imageBuffer = np.zeros((width, height, 3))
@@ -114,7 +90,7 @@ class RasterRenderer(Renderer):
         print(len(projectedFaces))
         for i, face in tqdm(enumerate(projectedFaces)):
             face = np.around(face[:, :2], 5)
-            style = test_shader(eyespaceFaces[i])
+            style = mesh.shader(eyespaceFaces[i], self.scene.camera, self.scene.light)
             if style is None:
                 continue
             imageBuffer = rasterizePolygon(face, imageBuffer, **style)
@@ -129,18 +105,19 @@ class RasterRenderer(Renderer):
 
 
 class PainterRenderer(Renderer):
-    def __init__(self, camera):
-        super().__init__(camera)
+    def __init__(self, scene: Scene):
+        super().__init__(scene)
 
-    def render(self, mesh) -> "PIL.Image":
-        width, height = 1080, 1080  # temporary
+    def render(self, mesh: Mesh) -> "PIL.Image":
+        width, height = self.scene.width, self.scene.height  # temporary
+        print(width, height)
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         image = Image.new("RGBA", (width, height))
         draw = ImageDraw.Draw(image)
         for i, face in tqdm(enumerate(projectedFaces)):
             face = np.around(face[:, :2], 5)
-            style = test_shader(eyespaceFaces[i])
+            style = mesh.shader(eyespaceFaces[i], self.scene.camera, self.scene.light)
             style['fill'] = tuple(list(style['fill']) + [style['opacity']])
             if style is None:
                 continue
@@ -151,28 +128,28 @@ class PainterRenderer(Renderer):
 
 
 class SVGPainterRenderer(Renderer):
-    def __init__(self, camera):
-        super().__init__(camera)
+    def __init__(self, scene: Scene):
+        super().__init__(scene)
 
-    def render(self, mesh) -> "drawsvg.Drawing":
+    def render(self, mesh: Mesh) -> "drawsvg.Drawing":
         try:
             import drawsvg as draw
         except ModuleNotFoundError as error:
             raise error
 
-        width, height = 1080, 1080  # temporary
+        width, height = self.scene.width, self.scene.height  # temporary
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         drawing = draw.Drawing(width, height)
         for i, face in tqdm(enumerate(projectedFaces)):
             face = np.around(face[:, :2], 5)
-            style = test_shader(eyespaceFaces[i])
-            dstyle = dict(fill=rgbToHex(*[int(i) for i in style['fill']]),
-                          fill_opacity=style['opacity'] / 255, stroke=rgbToHex(*[int(i) for i in style['stroke'][:3:]]),
-                          stroke_width="0,001")
+            style = mesh.shader(eyespaceFaces[i], self.scene.camera, self.scene.light)
 
             if style is None:
                 continue
+            dstyle = dict(fill=rgbToHex(*[int(i) for i in style['fill']]),
+                          fill_opacity=style['opacity'] / 255, stroke=rgbToHex(*[int(i) for i in style['stroke'][:3:]]),
+                          stroke_width="0,001")
             drawing.append(draw.Lines(*list(face.ravel()), close=True, **dstyle))
 
         return drawing
