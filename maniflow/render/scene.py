@@ -57,12 +57,7 @@ class RenderObject:
 
 
 class Scene(NamedTuple):
-    objects: Sequence[RenderObject]
     camera: Camera
     width: int = 1080
     height: int = 1080
     light: np.array = np.array([15, 10, 15])
-
-    def addMesh(self, *objects: RenderObject):
-        for object in objects:
-            self.objects.append(object)
