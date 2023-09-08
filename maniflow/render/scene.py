@@ -45,8 +45,10 @@ class RenderObject:
 
     def setStyle(self, style: str):
         shaders = dict(
+            standard=Shader([170, 00, 255], 200, [0, 0, 0, 200], stroke_width="0.01"),
             wireframe=Shader([0, 0, 0], 0, [0, 0, 0, 255], stroke_width="0.01"),
-            bw=Shader([200, 200, 200], 200, [0, 0, 0, 255], stroke_width="0.01")
+            bw=Shader([200, 200, 200], 200, [0, 0, 0, 255], stroke_width="0.01"),
+            red=Shader([255, 00, 0], 150, [0, 0, 0, 200], stroke_width="0.01")
         )
         self.setShader(shaders[style])
 
