@@ -8,8 +8,8 @@ class Shader(NamedTuple):
     fill_opacity: int
     stroke: np.array
     stroke_width: str = None
-    shininess: float = 60
-    specular: float = 1.4
+    shininess: float = 85
+    specular: float = 0.8
 
     def __call__(self, face: np.array, camera: Camera, light: np.array):
         normal = np.cross(face[1] - face[0], face[2] - face[0])
@@ -45,7 +45,7 @@ class RenderObject:
 
     def setStyle(self, style: str):
         shaders = dict(
-            standard=Shader([170, 00, 255], 200, [0, 0, 0, 200], stroke_width="0.01"),
+            standard=Shader([170, 0, 255], 200, [17, 0, 25, 200], stroke_width="0.01"),
             wireframe=Shader([0, 0, 0], 0, [0, 0, 0, 255], stroke_width="0.01"),
             bw=Shader([200, 200, 200], 200, [0, 0, 0, 255], stroke_width="0.01"),
             red=Shader([255, 00, 0], 150, [0, 0, 0, 200], stroke_width="0.01")

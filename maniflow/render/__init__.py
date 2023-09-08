@@ -122,7 +122,7 @@ class PainterRenderer(Renderer):
             if style is None:
                 continue
             draw.polygon(xy=[tuple(i) for i in face], fill=tuple([int(i) for i in style['fill']]),
-                         outline=(0, 0, 0, 255))
+                         outline=tuple(style['stroke']))
 
         return image
 
