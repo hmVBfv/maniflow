@@ -51,7 +51,6 @@ class Face:
 
         self.mesh = mesh
         self.vertices = vertices
-        self._normal = None
 
     def __repr__(self) -> str:
         return "f " + str(self.vertices)
@@ -77,32 +76,6 @@ class Face:
     def __len__(self):
         return len(self.vertices)
 
-    @property
-    def normal(self) -> np.array:
-        """
-        Syntactic sugar to easily get the normal vector of the face.
-        :return: the normal vector of the face.
-        """
-        if self._normal is None:
-            self.updateNormal()
-        return self._normal
-
-    def setNormal(self, normal: np.array):
-        self._normal = normal
-
-    def updateNormal(self):
-        """
-        A method to a priori update the normal of the face.
-        In the first step we compute spanning vectors that span the plane on
-        which the face lies. In the second step we compute the cross product of
-        those spanning vectors in order to obtain the normal of the face.
-        :return:
-        """
-        a = self[0] - self[1]
-        b = self[0] - self[2]
-        normal = np.cross(a, b)
-        self.setNormal(normal / np.linalg.norm(normal))
-
 
 class Mesh(RenderObject):
     """
@@ -125,14 +98,6 @@ class Mesh(RenderObject):
 
     def addFace(self, face: Face):
         self.faces.append(face)
-
-    def updateNormals(self):
-        """
-        A method that updates all normal vectors according to the updateNormal method for every face in the mesh.
-        :return:
-        """
-        for face in self.faces:
-            face.updateNormal()
 
     def copy(self) -> "Mesh":
         return copy.deepcopy(self)
