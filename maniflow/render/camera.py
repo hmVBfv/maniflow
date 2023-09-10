@@ -40,6 +40,10 @@ class Camera:
         self.update()
 
     @property
+    def position(self):
+        return self._position
+
+    @property
     def projection(self) -> np.array:
         return self._projection
 
