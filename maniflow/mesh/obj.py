@@ -42,7 +42,6 @@ class OBJFile:
                     vertexIds = list(map(transformId, splitLine[1::]))
                     mesh.addFace(Face(mesh, *vertexIds))  # the face is then added to the mesh
 
-        mesh.updateNormals()  # we finally update the normals of each face
         return mesh
 
     @staticmethod
