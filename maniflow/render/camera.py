@@ -1,4 +1,3 @@
-import pyrr  # TODO: get rid of pyrr. It is only used to compute the projection matrix...
 import numpy as np
 
 
@@ -15,28 +14,61 @@ class Camera:
         :param far: the far plane
         """
 
-        self.position = position
-        self.target = target
-        self.up = up
-        self.fovy = fovy
-        self.aspect = aspect
-        self.near = near
-        self.far = far
-        view = pyrr.matrix44.create_look_at(
-            eye=position, target=target, up=up
-        )
-        projection = pyrr.matrix44.create_perspective_projection(
-            fovy=fovy, aspect=aspect, near=near, far=far
-        )
-        # projection = self.getPerspectiveMatrix(fovy, aspect, near, far)
+        self._projection = None
+        self._position = np.array(position)
+        self._target = np.array(target)
+        self._up = np.array(up)
+        self._fovy = fovy
+        self._aspect = aspect
+        self._near = near
+        self._far = far
 
-        self.projection = np.dot(view, projection)
+        self.update()
 
-    def getPerspectiveMatrix(self, fovy, aspect, near, far):
-        f = 1 / np.tan(fovy / 2)
-        g = (far + near) / (near - far)
-        h = (2 * far * near) / (near - far)
-        return np.array([[f / aspect, 0, 0, 0],
-                         [0, f, 0, 0],
-                         [0, 0, g, h],
-                         [0, 0, -1, 0]])
+    def update(self):
+        view = self.getLookAt()
+        projection = self.getPerspectiveMatrix()
+
+        self._projection = np.dot(view, projection)
+
+    def setPosition(self, position: np.array):
+        self._position = position
+        self.update()
+
+    def setTarget(self, target: np.array):
+        self._target = target
+        self.update()
+
+    @property
+    def projection(self) -> np.array:
+        return self._projection
+
+    def getPerspectiveMatrix(self) -> np.array:
+        # see: https://www.cs.princeton.edu/courses/archive/spring22/cos426/72f0711e207865b0d6e5193b1f6d1f9b
+        # /PerspectiveProjection.pdf
+        f = 1/np.tan(self._fovy * np.pi / 360)
+        g = (self._far + self._near) / (self._near - self._far)
+        h = (2 * self._far * self._near) / (self._near - self._far)
+        return np.array([
+            [f / self._aspect, 0, 0, 0],
+            [0, f, 0, 0],
+            [0, 0, g, h],
+            [0, 0, -1, 0]
+        ]).transpose()
+
+    def getLookAt(self) -> np.array:
+        # see: https://www.youtube.com/watch?v=cKbC-Jkd-3I
+        # and https://pyrr.readthedocs.io/en/latest/_modules/pyrr/matrix44.html
+        forward = (self._target - self._position)
+        forward /= np.linalg.norm(forward)
+        right = (np.cross(forward, self._up))
+        right /= np.linalg.norm(right)
+        up = (np.cross(right, forward))
+        up /= np.linalg.norm(up)
+
+        return np.array([
+            [right[0], up[0], -forward[0], 0],
+            [right[1], up[1], -forward[1], 0],
+            [right[2], up[2], -forward[2], 0],
+            [-np.dot(right, self._position), -np.dot(up, self._position), np.dot(forward, self._position), 1.0]
+        ])
