@@ -1,4 +1,4 @@
-from maniflow.mesh.utils import *
+from maniflow.mesh import Mesh, Face
 import numpy as np
 
 
@@ -47,13 +47,3 @@ class Grid(Mesh):
             for j in range(m - 1):
                 self.faces.append(Face(self, vId(i, j), vId(i + 1, j), vId(i + 1, j + 1)))
                 self.faces.append(Face(self, vId(i, j), vId(i + 1, j + 1), vId(i, j + 1)))
-
-
-@VertexFunction
-def moebius(vertex):
-    x = vertex[0]
-    y = vertex[1]
-    x0 = np.cos(x) * (1 + (y / 2) * np.cos(x / 2))
-    x1 = np.sin(x) * (1 + (y / 2) * np.cos(x / 2))
-    x2 = (y / 2) * np.sin(x / 2)
-    return np.array([x0, x1, x2])
