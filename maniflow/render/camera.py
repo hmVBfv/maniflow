@@ -50,6 +50,7 @@ class Camera:
     def getPerspectiveMatrix(self) -> np.array:
         # see: https://www.cs.princeton.edu/courses/archive/spring22/cos426/72f0711e207865b0d6e5193b1f6d1f9b
         # /PerspectiveProjection.pdf
+        # and https://cseweb.ucsd.edu/classes/wi18/cse167-a/lec4.pdf
         f = 1/np.tan(self._fovy * np.pi / 360)
         g = (self._far + self._near) / (self._near - self._far)
         h = (2 * self._far * self._near) / (self._near - self._far)
