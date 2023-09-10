@@ -273,6 +273,4 @@ class VertexFunction(object):
         for i in range(len(new.vertices)):  # now we apply the function to all vertices on the mesh
             new.vertices[i] = self.func(new.vertices[i])
 
-        new.updateNormals()  # as the vertices have changed we need to update the surface normals
-
         return new
