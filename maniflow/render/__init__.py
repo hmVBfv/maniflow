@@ -119,7 +119,7 @@ class PainterRenderer(Renderer):
         for i, face in tqdm(enumerate(projectedFaces)):
             face = np.around(face[:, :2], 5)
             style = mesh.shader(eyespaceFaces[i], self.scene.camera, self.scene.light)
-            style['fill'] = tuple(list(style['fill']) + [style['opacity']])
+            style['fill'] = tuple(list(style['fill']) + [255])
             if style is None:
                 continue
             draw.polygon(xy=[tuple(i) for i in face],
