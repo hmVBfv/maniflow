@@ -1,7 +1,8 @@
+import maniflow.mesh
+
 from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw
 
-from maniflow.mesh import Mesh
 from maniflow.render.camera import Camera
 from maniflow.render.raster import *
 from maniflow.render.scene import *
@@ -30,7 +31,7 @@ class Renderer(ABC):
     def __init__(self, scene: Scene):
         self.scene = scene
 
-    def projectFaces(self, mesh: Mesh) -> (np.array, np.array):
+    def projectFaces(self, mesh: "maniflow.mesh.Mesh") -> (np.array, np.array):
         """
         This method prepares the geometric information given by the mesh to be fed in
         the several rendering methods in the rendering classes.
@@ -47,7 +48,6 @@ class Renderer(ABC):
         getids = lambda face: tuple(face.vertices)
         faces = np.int32(list(map(getids, mesh.faces)))
         faces = verts[faces]
-        faces *= 1.2
         eyespaceFaces = faces.copy()
 
         faces = np.dstack([faces, np.ones(faces.shape[:2])])
@@ -65,13 +65,13 @@ class Renderer(ABC):
         eyespaceFaces = eyespaceFaces[face_indices]
 
         # scale the resulting points
-        faces[:, :, 0:1] = (1.0 + faces[:, :, 0:1]) * self.scene.width / 2 # width
-        faces[:, :, 1:2] = (1.0 - faces[:, :, 1:2]) * self.scene.height / 2 # height
+        faces[:, :, 0:1] = (1.0 + faces[:, :, 0:1]) * self.scene.width / 2
+        faces[:, :, 1:2] = (1.0 - faces[:, :, 1:2]) * self.scene.height / 2
 
         return faces, eyespaceFaces
 
     @abstractmethod
-    def render(self, mesh: Mesh):
+    def render(self, mesh: "maniflow.mesh.Mesh"):
         pass
 
 
@@ -79,7 +79,7 @@ class RasterRenderer(Renderer):
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
-    def render(self, mesh: Mesh) -> "PIL.Image":
+    def render(self, mesh: "maniflow.mesh.Mesh") -> Image:
         width, height = self.scene.width, self.scene.height  # temporary
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
@@ -108,7 +108,7 @@ class PainterRenderer(Renderer):
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
-    def render(self, mesh: Mesh) -> "PIL.Image":
+    def render(self, mesh: "maniflow.mesh.Mesh") -> Image:
         width, height = self.scene.width, self.scene.height  # temporary
         print(width, height)
 
@@ -131,7 +131,7 @@ class SVGPainterRenderer(Renderer):
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
-    def render(self, mesh: Mesh) -> "drawsvg.Drawing":
+    def render(self, mesh: "maniflow.mesh.Mesh") -> "drawsvg.Drawing":
         try:
             import drawsvg as draw
         except ModuleNotFoundError as error:
