@@ -28,6 +28,7 @@ class Renderer(ABC):
     A class to create a sort of blueprint of what capabilities a renderer should have.
     This way the code is far more modular.
     """
+
     def __init__(self, scene: Scene):
         self.scene = scene
 
@@ -121,7 +122,8 @@ class PainterRenderer(Renderer):
             style['fill'] = tuple(list(style['fill']) + [style['opacity']])
             if style is None:
                 continue
-            draw.polygon(xy=[tuple(i) for i in face], fill=tuple([int(i) for i in style['fill']]),
+            draw.polygon(xy=[tuple(i) for i in face],
+                         fill=tuple([int(i) for i in style['fill']]),
                          outline=tuple(style['stroke']))
 
         return image
@@ -147,9 +149,10 @@ class SVGPainterRenderer(Renderer):
 
             if style is None:
                 continue
-            dstyle = dict(fill=rgbToHex(*[int(i) for i in style['fill']]),
-                          fill_opacity=style['opacity'] / 255, stroke=rgbToHex(*[int(i) for i in style['stroke'][:3:]]),
-                          stroke_width="0,001")
-            drawing.append(draw.Lines(*list(face.ravel()), close=True, **dstyle))
+            draw_style = dict(fill=rgbToHex(*[int(i) for i in style['fill']]),
+                              fill_opacity=style['opacity'] / 255,
+                              stroke=rgbToHex(*[int(channel) for channel in style['stroke'][:3:]]),
+                              stroke_width=style["stroke_width"])
+            drawing.append(draw.Lines(*list(face.ravel()), close=True, **draw_style))
 
         return drawing
