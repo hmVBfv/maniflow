@@ -72,7 +72,7 @@ class Renderer(ABC):
         return faces, eyespaceFaces
 
     @abstractmethod
-    def render(self, mesh: "maniflow.mesh.Mesh"):
+    def render(self, mesh: "maniflow.mesh.Mesh", verbose=False):
         pass
 
 
@@ -80,7 +80,7 @@ class RasterRenderer(Renderer):
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
-    def render(self, mesh: "maniflow.mesh.Mesh") -> Image:
+    def render(self, mesh: "maniflow.mesh.Mesh", verbose=False) -> Image:
         width, height = self.scene.width, self.scene.height  # temporary
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
@@ -88,8 +88,10 @@ class RasterRenderer(Renderer):
         imageBuffer = np.dstack([imageBuffer, 255 * np.zeros(imageBuffer.shape[:2])])
 
         # rendering the faces
-        print(len(projectedFaces))
-        for i, face in tqdm(enumerate(projectedFaces)):
+        faceIterator = enumerate(projectedFaces)
+        if verbose:
+            faceIterator = tqdm(faceIterator)
+        for i, face in faceIterator:
             face = np.around(face[:, :2], 5)
             style = mesh.shader(eyespaceFaces[i], self.scene.camera, self.scene.light)
             if style is None:
@@ -109,14 +111,18 @@ class PainterRenderer(Renderer):
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
-    def render(self, mesh: "maniflow.mesh.Mesh") -> Image:
+    def render(self, mesh: "maniflow.mesh.Mesh", verbose=False) -> Image:
         width, height = self.scene.width, self.scene.height  # temporary
         print(width, height)
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         image = Image.new("RGBA", (width, height))
         draw = ImageDraw.Draw(image)
-        for i, face in tqdm(enumerate(projectedFaces)):
+
+        faceIterator = enumerate(projectedFaces)
+        if verbose:
+            faceIterator = tqdm(faceIterator)
+        for i, face in faceIterator:
             face = np.around(face[:, :2], 5)
             style = mesh.shader(eyespaceFaces[i], self.scene.camera, self.scene.light)
             style['fill'] = tuple(list(style['fill']) + [255])
@@ -133,7 +139,7 @@ class SVGPainterRenderer(Renderer):
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
-    def render(self, mesh: "maniflow.mesh.Mesh") -> "drawsvg.Drawing":
+    def render(self, mesh: "maniflow.mesh.Mesh", verbose=False) -> "drawsvg.Drawing":
         try:
             import drawsvg as draw
         except ModuleNotFoundError as error:
@@ -143,7 +149,11 @@ class SVGPainterRenderer(Renderer):
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         drawing = draw.Drawing(width, height)
-        for i, face in tqdm(enumerate(projectedFaces)):
+
+        faceIterator = enumerate(projectedFaces)
+        if verbose:
+            faceIterator = tqdm(faceIterator)
+        for i, face in faceIterator:
             face = np.around(face[:, :2], 5)
             style = mesh.shader(eyespaceFaces[i], self.scene.camera, self.scene.light)
 
