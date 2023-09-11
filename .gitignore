@@ -1,5 +1,7 @@
 /maniflow.egg-info
 /build
+examples/.ipynb_checkpoints
+examples/render
 
 # Folder view configuration files
 .idea/
