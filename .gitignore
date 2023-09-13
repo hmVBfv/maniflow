@@ -2,6 +2,8 @@
 /build
 examples/.ipynb_checkpoints
 examples/render
+*.aux
+*.log
 
 # Folder view configuration files
 .idea/
