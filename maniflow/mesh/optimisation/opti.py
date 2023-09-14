@@ -63,7 +63,7 @@ We check whether an operation reduces the energy and is legal and decide accordi
     ^ If i and j are boundary vertices, then the edge {i,j} is a boundary edge
     ^ If neither i nor j are boundary vertices, then the local mesh as at least four vertices
     ^ Otherwise, the local mesh has at least three vertices.
-* An edge swap is only legal if and only if the there exists new edge between the potential two new endpoints of the edge swap.
+* An edge swap is only legal if and only if there exists no edge between the potential two new endpoints of the edge swap.
 """
 def generateLegalMove():
     pass
