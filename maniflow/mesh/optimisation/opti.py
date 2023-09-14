@@ -40,9 +40,24 @@ def improveVertexPos():
 Implement the Conjugate Gradient method for iterative optimization.
 This method efficiently solves linear systems of equations by iteratively
 minimizing the residual error updating a conjugate direction vector.
+:param A: symmetric matrix
+:param x: initial guess for solution vector x
+:param b: corresponding vector for equation Ax=b
+:return: sufficiently accurate solution x to the problem Ax=b
 """
-def conjugateGradiant():
-    pass
+def conjugateGradiant(A: np.array, x: np.array, b: np.array, accuracy = 10**(-5)):
+    r0 = b - A @ x  # @ being the operator for matrix multiplication, equivalent to np.matmul()
+    if all(r1 < accuracy):   # If the initial guess of x was good enough, end
+        return x
+    p = r0
+    while True:
+        alpha = (r0 @ r0) / (p @ A @ p)
+        x = x + alpha * p
+        r1 = r0 - alpha * A @ p
+        if all(r1 < accuracy):   # check the updated residue value
+            return x
+        beta = (r1 @ r1) / (r0 @ r0)
+        p = r1 + beta * p
 
 """
 To optimise the mesh structure we us three elementary transformations:
