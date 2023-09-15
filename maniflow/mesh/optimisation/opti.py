@@ -43,9 +43,16 @@ minimizing the residual error updating a conjugate direction vector.
 :param A: symmetric matrix
 :param x: initial guess for solution vector x
 :param b: corresponding vector for equation Ax=b
+:param accuracy: defining how small "sufficiently small" is for the algorithm w.r.t. the error
 :return: sufficiently accurate solution x to the problem Ax=b
 """
 def conjugateGradiant(A: np.array, x: np.array, b: np.array, accuracy = 10**(-5)):
+    # Check dimensions
+    if not ((x.shape[0] == x.size) and (b.shape[0] == b.size)):
+        raise ValueError("x and b have to be numpy arrays of dimension (n,), i.e. vectors.")
+    if not ((A.shape[1] == x.shape[0]) and (x.shape == b.shape)):
+        raise ValueError("Matrix dimensions are incompatible.")
+    
     r0 = b - A @ x  # @ being the operator for matrix multiplication, equivalent to np.matmul()
     if all(r1 < accuracy):   # If the initial guess of x was good enough, end
         return x
