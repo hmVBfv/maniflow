@@ -23,13 +23,16 @@ def rgbToHex(r: int, g: int, b: int) -> str:
 
 
 class Renderer(ABC):
-    # TODO: add more documentation to the class
     """
     A class to create a sort of blueprint of what capabilities a renderer should have.
     This way the code is far more modular.
     """
 
     def __init__(self, scene: Scene):
+        """
+        A method to initialize a renderer from a given scene object.
+        :param scene: the scene object from which the renderer is to be initialized
+        """
         self.scene = scene
 
     def projectFaces(self, mesh: "maniflow.mesh.Mesh") -> (np.array, np.array):
@@ -45,27 +48,43 @@ class Renderer(ABC):
         :return: the projected faces on the viewing plane and the original faces of the mesh
         """
         # creating one array from the mesh. Encoding all of its geometry into it
-        verts = np.float32(list(map(tuple, mesh.vertices)))
-        getids = lambda face: tuple(face.vertices)
-        faces = np.int32(list(map(getids, mesh.faces)))
-        faces = verts[faces]
-        eyespaceFaces = faces.copy()
+        vertices = np.float32(list(map(tuple, mesh.vertices)))  # making one big array with all the vertices
+        # from the mesh
+        getids = lambda face: tuple(face.vertices)  # a shorthand method to gather the vertex-ids from a given face
+        faces = np.int32(list(map(getids, mesh.faces)))  # gathering all the faces with their respective vertex-ids
+        # into one numpy array
+        faces = vertices[faces]  # now we 'replace' the vertex-ids with their respective coordinates
+        eyespaceFaces = faces.copy()  # making a (deep) copy of the faces
+        # since the array 'faces' will later be used to project the vertices onto the viewing space
 
+        # we now prepare the faces for projection by appending a 1 at the end of every vertex coordinate
+        # making them vectors in R^4. This way, we obtain the homogenous coordinates of every vertex
         faces = np.dstack([faces, np.ones(faces.shape[:2])])
+        # now we project every vertex onto the viewing space using the projection matrix from the camera
+        # that is given by the scene
         faces = np.dot(faces, self.scene.camera.projection)
+        # we now split the homogenous coordinates back to their respective coordinates in the viewing space
+        # and w being the distance from the vertex (in the world coordinates) from the viewing plane
         xyz, w = faces[:, :, :3], faces[:, :, 3:]
+        # we obtain the perspective coordinates by dividing the coordinates from every vertex in the viewing space
+        # by their distance (in world coordinates) to the viewing plane
+        # this way, the farther away a point (in world coordinates) is from the camera,
+        # the closer it will be to the center of the image
         faces = xyz / w
 
-        # sort faces from back to front.
-        centroids = -np.sum(w, axis=1)
+        # sort faces from back to front. This way we implement the so-called painters
+        # first algorithm. Faces that lie the farthest from the camera will be rendered first
+        centroids = -np.sum(w, axis=1)  # we compute the center points of every face
         for i in range(len(centroids)):
             centroids[i] /= len(faces[i])
+
         centroids = centroids.ravel()
-        face_indices = np.argsort(centroids)
-        faces = faces[face_indices]
+        face_indices = np.argsort(centroids)  # now we sort the array of centroids from back to front
+        faces = faces[face_indices]  # we apply the new ordering of the faces to the 'face' array
         eyespaceFaces = eyespaceFaces[face_indices]
 
-        # scale the resulting points
+        # scale the resulting points so that they match the width and the height
+        # of the desired output image
         faces[:, :, 0:1] = (1.0 + faces[:, :, 0:1]) * self.scene.width / 2
         faces[:, :, 1:2] = (1.0 - faces[:, :, 1:2]) * self.scene.height / 2
 
@@ -73,7 +92,15 @@ class Renderer(ABC):
 
     @abstractmethod
     def render(self, mesh: "maniflow.mesh.Mesh", verbose=False):
-        pass
+        """
+        A method that is called to render a given mesh and to obtain the rendered image.
+        :param mesh: the given mesh that is to be rendered
+        :param verbose: a boolean value. When it's True, the Renderer object will
+        output the progress of rendering the image using the tqdm module.
+        :return: an image object (either PIL.Image or drawsvg.Drawing) depending on the sort
+        of renderer that actually implements this abstract class.
+        """
+        raise NotImplementedError("This in an abstract method and is thus not implemented!")
 
 
 class RasterRenderer(Renderer):
