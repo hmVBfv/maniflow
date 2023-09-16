@@ -167,21 +167,25 @@ class Mesh:
         :param meshes: mesh list to be merged
         :param cleaning: whether mesh.cleaning() should be run after taking the union, done by default
         :param coincideVertices: whether coincidingVertices() should be run after the union to identify equivalent
-        vertices, not used for now
+        vertices
         :return: the mesh of the union of the mesh list
         """
+        # Nothing to combine the single input mesh with
         if len(meshes) == 1:
             return meshes[0]
         
         mesh = Mesh()
 
+        # Simply merging the vertices and adjusting the respective face references of the second mesh to merge the faces
         mesh.vertices = meshes[0].vertices + meshes[1].vertices
         mesh.faces = meshes[0].faces + \
             list({Face(mesh, *[i+meshes[0].v for i in face.vertices]) for face in meshes[1].faces})
 
+        # If more than two meshes are to be combined, combine pairwise recursively
         if len(meshes) > 2:
             mesh = Mesh.union(mesh, *meshes[2::])
 
+        # Cleaning up the mesh after the merge
         if cleaning and len(meshes) == 2:
             mesh.clean()
         #if coincideVertices:
@@ -193,14 +197,22 @@ class Mesh:
 
     @staticmethod
     def fromFaceList(mesh: "Mesh", *face_index: int) -> "Mesh":
+        """
+        A method to return a submesh created from a list of faces on a given mesh.
+        :param mesh: initial mesh to take faces from
+        :param face_index: list of face indices to create the new submesh with
+        :return: submesh resulting from given faces on the initial mesh
+        """
         m = Mesh()
 
+        # Checking whether all the indices in face_index are within the face index range of mesh
         if not all([i < mesh.f for i in face_index]):
             raise IndexError
         
+        # Updating the face list with those listed in face_index
         m.faces = list({Face(m, *mesh.faces[i].vertices) for i in face_index})
         m.vertices = mesh.vertices
-        m.clean()
+        m.clean()   # Deleting now orphant vertices without any faces referencing them
         return m
 
     @property
