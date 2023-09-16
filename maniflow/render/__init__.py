@@ -104,11 +104,21 @@ class Renderer(ABC):
 
 
 class RasterRenderer(Renderer):
+    """
+    A renderer based on the class Renderer that implements a 'simple' rasterizer by setting each pixel
+    using the methods implemented in raster.py
+
+    This renderer is capable of rendering .png files with a specified opacity (using the Shader class
+    one may specify the opacities used for rendering)
+
+    Disclaimer: as we rasterize each pixel one at a time this renderer is very slow and is thus
+    not very useful when rendering animations
+    """
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
     def render(self, mesh: "maniflow.mesh.Mesh", verbose=False) -> Image:
-        width, height = self.scene.width, self.scene.height  # temporary
+        width, height = self.scene.width, self.scene.height
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         imageBuffer = np.zeros((width, height, 3))
@@ -135,11 +145,20 @@ class RasterRenderer(Renderer):
 
 
 class PainterRenderer(Renderer):
+    """
+    A renderer based on the Renderer class is capable of rendering .png files but does not
+    support opacity.
+    The faces are set by using PIL.ImageDraw.Draw and are rasterized by using the .polygon
+    method implemented in the pillow (PIL) library.
+
+    This way, the renderer is much faster than the renderer implemented in RasterRenderer
+    but does not support the opacities specifies in the shader of a mesh (see: the Shader class)
+    """
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
     def render(self, mesh: "maniflow.mesh.Mesh", verbose=False) -> Image:
-        width, height = self.scene.width, self.scene.height  # temporary
+        width, height = self.scene.width, self.scene.height
         print(width, height)
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
@@ -163,6 +182,12 @@ class PainterRenderer(Renderer):
 
 
 class SVGPainterRenderer(Renderer):
+    """
+    A renderer that is based on the Renderer class and that is capable of producing .svg files.
+    As this renderer makes use of the class drawsvg.Drawing, the renderer is very fast and recommended
+    for rendering animations.
+    It fully supports the opacities set in the shader of the mesh (see: the Shader class)
+    """
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
