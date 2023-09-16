@@ -38,4 +38,6 @@ venv
 __pycache__
 #vscode 
 .vscode
+#play
+play.py
 
