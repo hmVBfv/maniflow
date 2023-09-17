@@ -11,10 +11,10 @@ def superTriangle(vertices: list[list]) -> list[list]:
     vertices = np.array(vertices)
     x = vertices[:, 0]
     y = vertices[:, 1]
-    maxx = np.max(x) + 1
-    maxy = np.max(y) + 1
-    minx = np.min(x) - 1
-    miny = np.min(y) - 1
+    maxx = np.max(x) + 10
+    maxy = np.max(y) + 10
+    minx = np.min(x) - 10
+    miny = np.min(y) - 10
 
     v = [(maxx + minx) / 2, maxy + (maxy - miny)]
     k1 = (v[1] - maxy) / (v[0] - minx)
@@ -67,7 +67,6 @@ def circumCircle(triangle: list[list]) -> dict:
         # If slope equals to 0, then the slope after rotating 90° doesn't exist
         x = mid1[0]
         y = k2 * (x - mid2[0]) + mid2[1]
-        print(k2)
     elif triangle[1][1] - triangle[2][1] == 0:
         # If slope equals to 0, then the slope after rotating 90° doesn't exist
         x = mid2[0]
@@ -75,15 +74,58 @@ def circumCircle(triangle: list[list]) -> dict:
     else:
         x = (k1 * mid1[0] - k2 * mid2[0] + mid2[1] - mid1[1]) / (k1 - k2)
         y = k1 * (x - mid1[0]) + mid1[1]
-
-    r = ((x - triangle[0][0]) ** 2 + (y - triangle[0][1]) ** 2) ** 0.5
+    r = np.linalg.norm(np.array(x, y) - np.array(triangle[0]))
     # Compute radius
     centre = [x, y]
 
     return {'centre': centre, 'radius': r}
 
 
-# def BowyerWatson2d(vertices: list[list]):
-#
-#     return
-#
+def BowyerWatson2d(vertices: list[list]) -> list[list[list]]:
+    """
+    The implementation of Bowyer–Watson algorithm in 2d, in order to generate
+    Delaunay triangulation for random vertices.
+    :param vertices: the given vertices
+    :return: a list of triangles which follow the Delaunay properties
+    """
+    super_triangle = superTriangle(vertices)
+    # Create a super triangle which contains all vertices
+    triangles = [super_triangle]
+    for vertex in vertices:
+        bad = []
+        polygon = []
+        for triangle in triangles:
+            circumcircle = circumCircle(triangle)
+            distance = np.linalg.norm(np.array(circumcircle['centre']) - np.array(vertex))
+            if distance < circumcircle['radius']:
+                bad.append(triangle)
+
+        bad_edge = []
+        for triangle in bad:
+            for i in range(3):
+                edge = sorted([triangle[i], triangle[(i + 1) % 3]])
+                bad_edge.append(edge)
+
+        for edge in bad_edge:
+            if edge not in polygon:
+                polygon.append(edge)
+        duplicate = bad_edge
+        for edge in polygon:
+            duplicate.remove(edge)
+        for edge in duplicate:
+            polygon.remove(edge)
+
+        triangles = [item for item in triangles if item not in bad]
+        for edge in polygon:
+            edge.append(vertex)
+        triangles += polygon
+
+    triangles = [item for item in triangles if all(vertex not in super_triangle for vertex in item)]
+    return triangles
+
+
+
+
+
+
+
