@@ -39,6 +39,5 @@ __pycache__
 #vscode 
 .vscode
 #play
-experiment.py
 playground.py
 
