@@ -92,20 +92,27 @@ def BowyerWatson2d(vertices: list[list]) -> list[list[list]]:
     # Create a super triangle which contains all vertices
     triangles = [super_triangle]
     for vertex in vertices:
+        # Insert the vertex one at a time
         bad = []
+        # It contains the triangles which do not meet the Delaunay properties, called bad triangles
         polygon = []
+        # After removing all shared edges in bad triangles, the remaining edges will form a polygon
         for triangle in triangles:
             circumcircle = circumCircle(triangle)
+            # Compute the circum-circle for each triangle
             distance = np.linalg.norm(np.array(circumcircle['centre']) - np.array(vertex))
+            # Distance between the given vertex and the centre of the circum-circle for each triangle
             if distance < circumcircle['radius']:
+                # If the vertex is inside the circum-circle, then the respective triangle is bad
                 bad.append(triangle)
 
         bad_edge = []
+        # Store the bad triangles in a list of edges instead of vertices
         for triangle in bad:
             for i in range(3):
                 edge = sorted([triangle[i], triangle[(i + 1) % 3]])
                 bad_edge.append(edge)
-
+        # Remove the shared edges
         for edge in bad_edge:
             if edge not in polygon:
                 polygon.append(edge)
@@ -116,11 +123,15 @@ def BowyerWatson2d(vertices: list[list]) -> list[list[list]]:
             polygon.remove(edge)
 
         triangles = [item for item in triangles if item not in bad]
+        # Remove all bad triangles from the triangle list
         for edge in polygon:
             edge.append(vertex)
         triangles += polygon
+        # Add new triangles to the triangle list
 
     triangles = [item for item in triangles if all(vertex not in super_triangle for vertex in item)]
+    # Eliminate all triangles whose vertices are part of the super triangle
+
     return triangles
 
 
