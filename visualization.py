@@ -99,11 +99,11 @@ def BowyerWatson2d(vertices: list[list]) -> list[list[list]]:
         polygon = []
         # After removing all shared edges in bad triangles, the remaining edges will form a polygon
         for triangle in triangles:
-            circumcircle = circumCircle(triangle)
+            circum_circle = circumCircle(triangle)
             # Compute the circum-circle for each triangle
-            distance = np.linalg.norm(np.array(circumcircle['centre']) - np.array(vertex))
+            distance = np.linalg.norm(np.array(circum_circle['centre']) - np.array(vertex))
             # Distance between the given vertex and the centre of the circum-circle for each triangle
-            if distance < circumcircle['radius']:
+            if distance < circum_circle['radius']:
                 # If the vertex is inside the circum-circle, then the respective triangle is bad
                 bad.append(triangle)
 
