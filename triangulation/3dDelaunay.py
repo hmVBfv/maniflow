@@ -77,58 +77,58 @@ def circumSphere(tetrahedron: list[list]) -> dict:
     return {'centre': centre, 'radius': r}
 
 
-# def BowyerWatson2d(vertices: list[list]) -> list[list[list]]:
-#     """
-#     The implementation of Bowyer–Watson algorithm in 2d, in order to generate
-#     Delaunay triangulation for random vertices.
-#     :param vertices: the given vertices
-#     :return: a list of triangles which follow the Delaunay properties
-#     """
-#     super_triangle = superTriangle(vertices)
-#     # Create a super triangle which contains all vertices
-#     triangles = [super_triangle]
-#     for vertex in vertices:
-#         # Insert the vertex one at a time
-#         bad = []
-#         # It contains the triangles which do not meet the Delaunay properties, called bad triangles
-#         polygon = []
-#         # After removing all shared edges in bad triangles, the remaining edges will form a polygon
-#         for triangle in triangles:
-#             circum_circle = circumCircle(triangle)
-#             # Compute the circum-circle for each triangle
-#             distance = np.linalg.norm(np.array(circum_circle['centre']) - np.array(vertex))
-#             # Distance between the given vertex and the centre of the circum-circle for each triangle
-#             if distance < circum_circle['radius']:
-#                 # If the vertex is inside the circum-circle, then the respective triangle is bad
-#                 bad.append(triangle)
-#
-#         bad_edge = []
-#         # Store the bad triangles in a list of edges instead of vertices
-#         for triangle in bad:
-#             for i in range(3):
-#                 edge = sorted([triangle[i], triangle[(i + 1) % 3]])
-#                 bad_edge.append(edge)
-#         # Remove the shared edges
-#         for edge in bad_edge:
-#             if edge not in polygon:
-#                 polygon.append(edge)
-#         duplicate = bad_edge
-#         for edge in polygon:
-#             duplicate.remove(edge)
-#         for edge in duplicate:
-#             polygon.remove(edge)
-#
-#         triangles = [item for item in triangles if item not in bad]
-#         # Remove all bad triangles from the triangle list
-#         for edge in polygon:
-#             edge.append(vertex)
-#         triangles += polygon
-#         # Add new triangles to the triangle list
-#
-#     triangles = [item for item in triangles if all(vertex not in super_triangle for vertex in item)]
-#     # Eliminate all triangles whose vertices are part of the super triangle
-#
-#     return triangles
+def BowyerWatson3d(vertices: list[list]) -> list[list[list]]:
+    """
+    The implementation of Bowyer–Watson algorithm in 3d, in order to generate 3d
+    Delaunay triangulation for random vertices.
+    :param vertices: the given vertices
+    :return: a list of tetrahedrons which follow the Delaunay properties
+    """
+    super_tetrahedron = superTetrahedron(vertices)
+    # Create a super tetrahedron which contains all vertices
+    tetrahedrons = [super_tetrahedron]
+    for vertex in vertices:
+        # Insert the vertex one at a time
+        bad = []
+        # It contains the tetrahedrons which do not meet the Delaunay properties, called bad tetrahedrons
+        polyhedron = []
+        # After removing all shared faces in bad tetrahedrons, the remaining faces will form a polyhedron
+        for tetrahedron in tetrahedrons:
+            circum_sphere = circumSphere(tetrahedron)
+            # Compute the circum-sphere for each tetrahedron
+            distance = np.linalg.norm(np.array(circum_sphere['centre']) - np.array(vertex))
+            # Distance between the given vertex and the centre of the circum-sphere for each tetrahedron
+            if distance < circum_sphere['radius']:
+                # If the vertex is inside the circum-sphere, then the respective tetrahedron is bad
+                bad.append(tetrahedron)
+
+        bad_face = []
+        # Store the bad tetrahedrons in a list of faces instead of vertices
+        for tetrahedron in bad:
+            for i in range(4):
+                face = sorted([tetrahedron[i], tetrahedron[(i + 1) % 4], tetrahedron[(i + 2) % 4]])
+                bad_face.append(face)
+        # Remove the shared faces
+        for face in bad_face:
+            if face not in polyhedron:
+                polyhedron.append(face)
+        duplicate = bad_face
+        for face in polyhedron:
+            duplicate.remove(face)
+        for face in duplicate:
+            polyhedron.remove(face)
+
+        tetrahedrons = [item for item in tetrahedrons if item not in bad]
+        # Remove all bad tetrahedrons from the tetrahedron list
+        for face in polyhedron:
+            face.append(vertex)
+        tetrahedrons += polyhedron
+        # Add new tetrahedrons to the tetrahedron list
+
+    tetrahedrons = [item for item in tetrahedrons if all(vertex not in super_tetrahedron for vertex in item)]
+    # Eliminate all tetrahedrons whose vertices are part of the super tetrahedron
+
+    return tetrahedrons
 
 
 

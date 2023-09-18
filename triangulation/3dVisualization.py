@@ -1,7 +1,6 @@
 # Implementation of Bowyer–Watson algorithm for Delaunay triangulation in 3d, extend triangle to tetrahedron.
 import numpy as np
 import matplotlib.pyplot as plt
-import random
 
 
 def superTetrahedron(vertices: list[list]) -> list[list]:
@@ -84,7 +83,7 @@ def BowyerWatson3d(vertices: list[list]) -> list[list[list]]:
     The implementation of Bowyer–Watson algorithm in 3d, in order to generate 3d
     Delaunay triangulation for random vertices.
     :param vertices: the given vertices
-    :return: a list of tetrahedron which follow the Delaunay properties
+    :return: a list of tetrahedrons which follow the Delaunay properties
     """
     super_tetrahedron = superTetrahedron(vertices)
     # Create a super tetrahedron which contains all vertices
@@ -92,25 +91,25 @@ def BowyerWatson3d(vertices: list[list]) -> list[list[list]]:
     for vertex in vertices:
         # Insert the vertex one at a time
         bad = []
-        # It contains the triangles which do not meet the Delaunay properties, called bad triangles
+        # It contains the tetrahedrons which do not meet the Delaunay properties, called bad tetrahedrons
         polyhedron = []
-        # After removing all shared edges in bad triangles, the remaining edges will form a polygon
+        # After removing all shared faces in bad tetrahedrons, the remaining faces will form a polyhedron
         for tetrahedron in tetrahedrons:
             circum_sphere = circumSphere(tetrahedron)
-            # Compute the circum-circle for each triangle
+            # Compute the circum-sphere for each tetrahedron
             distance = np.linalg.norm(np.array(circum_sphere['centre']) - np.array(vertex))
-            # Distance between the given vertex and the centre of the circum-circle for each triangle
+            # Distance between the given vertex and the centre of the circum-sphere for each tetrahedron
             if distance < circum_sphere['radius']:
-                # If the vertex is inside the circum-circle, then the respective triangle is bad
+                # If the vertex is inside the circum-sphere, then the respective tetrahedron is bad
                 bad.append(tetrahedron)
 
         bad_face = []
-        # Store the bad triangles in a list of edges instead of vertices
+        # Store the bad tetrahedrons in a list of faces instead of vertices
         for tetrahedron in bad:
             for i in range(4):
                 face = sorted([tetrahedron[i], tetrahedron[(i + 1) % 4], tetrahedron[(i + 2) % 4]])
                 bad_face.append(face)
-        # Remove the shared edges
+        # Remove the shared faces
         for face in bad_face:
             if face not in polyhedron:
                 polyhedron.append(face)
@@ -121,14 +120,14 @@ def BowyerWatson3d(vertices: list[list]) -> list[list[list]]:
             polyhedron.remove(face)
 
         tetrahedrons = [item for item in tetrahedrons if item not in bad]
-        # Remove all bad triangles from the triangle list
+        # Remove all bad tetrahedrons from the tetrahedron list
         for face in polyhedron:
             face.append(vertex)
         tetrahedrons += polyhedron
-        # Add new triangles to the triangle list
+        # Add new tetrahedrons to the tetrahedron list
 
     tetrahedrons = [item for item in tetrahedrons if all(vertex not in super_tetrahedron for vertex in item)]
-    # Eliminate all triangles whose vertices are part of the super triangle
+    # Eliminate all tetrahedrons whose vertices are part of the super tetrahedron
 
     return tetrahedrons
 
@@ -137,51 +136,56 @@ def BowyerWatson3d(vertices: list[list]) -> list[list[list]]:
 
 
 
+# Simple example for generating 3d Delaunay triangulation using BowyerWatson3d(), given random 3d vertices
+import random
 
+# Generate random 3d points
+vertices = []
+for _ in range(5):
+    x = random.uniform(0, 50)
+    y = random.uniform(0, 50)
+    z = random.uniform(0, 50)
+    vertices.append([x, y, z])
 
-# Illustration for the super tetrahedron and its circum-sphere, given a list of random vertices
-vertices = [[random.uniform(1, 100), random.uniform(1, 100), random.uniform(1, 100)] for _ in range(100)]
-tetrahedron = superTetrahedron(vertices)
+# Apply the BowyerWatson3d algorithm to compute tetrahedrons
+Tet = BowyerWatson3d(vertices)
+print('number of tetrahedrons:', len(Tet))
+tetrahedrons = Tet
 
-circum_sphere = circumSphere(tetrahedron)
-
-# Sphere parameters
-center = circum_sphere['centre']  # Center of the sphere
-radius = circum_sphere['radius']  # Radius of the sphere
-
-# Create a grid of points for the sphere
-phi = np.linspace(0, np.pi, 20)
-theta = np.linspace(0, 2 * np.pi, 20)
-phi, theta = np.meshgrid(phi, theta)
-
-# Convert spherical coordinates to Cartesian coordinates
-x = center[0] + radius * np.sin(phi) * np.cos(theta)
-y = center[1] + radius * np.sin(phi) * np.sin(theta)
-z = center[2] + radius * np.cos(phi)
-
-# Extract x, y, and z coordinates
-x_coords, y_coords, z_coords = zip(*vertices)
-
-tetrahedron = np.array(tetrahedron)
-# Create a 3D scatter plot
+# Create a figure and axis for plotting
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(x, y, z, color='blue', alpha=0, shade=True, cmap='viridis')
-ax.scatter(x_coords, y_coords, z_coords, c='green', marker='*')
-ax.scatter(tetrahedron[:, 0], tetrahedron[:, 1], tetrahedron[:, 2], c='blue', marker='o')
 
-# Plot the six edges of the super tetrahedron
-ax.plot([tetrahedron[0][0], tetrahedron[1][0]], [tetrahedron[0][1], tetrahedron[1][1]], [tetrahedron[0][2], tetrahedron[1][2]], marker='o', linestyle='-', c='r')
-ax.plot([tetrahedron[0][0], tetrahedron[2][0]], [tetrahedron[0][1], tetrahedron[2][1]], [tetrahedron[0][2], tetrahedron[2][2]], marker='o', linestyle='-', c='r')
-ax.plot([tetrahedron[0][0], tetrahedron[3][0]], [tetrahedron[0][1], tetrahedron[3][1]], [tetrahedron[0][2], tetrahedron[3][2]], marker='o', linestyle='-', c='r')
-ax.plot([tetrahedron[1][0], tetrahedron[2][0]], [tetrahedron[1][1], tetrahedron[2][1]], [tetrahedron[1][2], tetrahedron[2][2]], marker='o', linestyle='-', c='r')
-ax.plot([tetrahedron[2][0], tetrahedron[3][0]], [tetrahedron[2][1], tetrahedron[3][1]], [tetrahedron[2][2], tetrahedron[3][2]], marker='o', linestyle='-', c='r')
-ax.plot([tetrahedron[3][0], tetrahedron[1][0]], [tetrahedron[3][1], tetrahedron[1][1]], [tetrahedron[3][2], tetrahedron[1][2]], marker='o', linestyle='-', c='r')
+# Function to plot a tetrahedron's edges
+def plot_tetrahedron_edges(tetrahedron):
+    vertices = list(tetrahedron)
+    edges = [
+        [vertices[0], vertices[1]],
+        [vertices[0], vertices[2]],
+        [vertices[0], vertices[3]],
+        [vertices[1], vertices[2]],
+        [vertices[1], vertices[3]],
+        [vertices[2], vertices[3]]
+    ]
+    for edge in edges:
+        x_coords, y_coords, z_coords = zip(*edge)
+        ax.plot(x_coords, y_coords, z_coords, color='b')
 
-# Set axis labels
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
+# Iterate through the tetrahedra and plot each one's edges
+for tetrahedron in tetrahedrons:
+    plot_tetrahedron_edges(tetrahedron)
+
+# Set labels and title
+ax.set_xlabel('X-axis')
+ax.set_ylabel('Y-axis')
+ax.set_zlabel('Z-axis')
+ax.set_title('Plot of Tetrahedra')
 
 # Show the plot
 plt.show()
+
+
+
+
+
+
