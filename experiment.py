@@ -48,36 +48,32 @@ def superTetrahedron(vertices: list[list]) -> list[list]:
     return [v, v0, v1, v2]
 
 
-# Generate 5 random 3D points with coordinates in the range [1, 10]
-vertices = [[random.uniform(1, 100), random.uniform(1, 100), random.uniform(1, 100)] for _ in range(100)]
-tetrahedron = superTetrahedron(vertices)
-tetrahedron = np.array(tetrahedron)
+def circumSphere(tetrahedron: list[list]) -> dict:
+    """
+    A method to determine the circum-sphere of a given tetrahedron.
+    :param tetrahedron: the target tetrahedron
+    :return: the circum-sphere which is defined by its centre & radius
+    """
+    n1 = np.array(tetrahedron[0]) - np.array(tetrahedron[1])
+    n1.tolist()
+    n2 = np.array(tetrahedron[0]) - np.array(tetrahedron[2])
+    n2.tolist()
+    n3 = np.array(tetrahedron[0]) - np.array(tetrahedron[3])
+    n3.tolist()
+    A = [n1, n2, n3]
 
-# Extract x, y, and z coordinates
-x_coords, y_coords, z_coords = zip(*vertices)
+    mid1 = (np.array(tetrahedron[0]) + np.array(tetrahedron[1])) / 2
+    mid1.tolist()
+    mid2 = (np.array(tetrahedron[0]) + np.array(tetrahedron[2])) / 2
+    mid2.tolist()
+    mid3 = (np.array(tetrahedron[0]) + np.array(tetrahedron[3])) / 2
+    mid3.tolist()
+    b1 = np.dot(n1, mid1)
+    b2 = np.dot(n2, mid2)
+    b3 = np.dot(n3, mid3)
+    b = [b1, b2, b3]
 
-# Create a 3D scatter plot
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(x_coords, y_coords, z_coords, c='blue', marker='o')
-ax.scatter(tetrahedron[:, 0], tetrahedron[:, 1], tetrahedron[:, 2], c='blue', marker='o')
+    centre = np.linalg.solve(A, b)
+    r = np.linalg.norm(np.array(centre) - np.array(tetrahedron[0]))
 
-# Plot the six edges of the super tetrahedron
-ax.plot([tetrahedron[0][0], tetrahedron[1][0]], [tetrahedron[0][1], tetrahedron[1][1]], [tetrahedron[0][2], tetrahedron[1][2]], marker='o', linestyle='-')
-ax.plot([tetrahedron[0][0], tetrahedron[2][0]], [tetrahedron[0][1], tetrahedron[2][1]], [tetrahedron[0][2], tetrahedron[2][2]], marker='o', linestyle='-')
-ax.plot([tetrahedron[0][0], tetrahedron[3][0]], [tetrahedron[0][1], tetrahedron[3][1]], [tetrahedron[0][2], tetrahedron[3][2]], marker='o', linestyle='-')
-ax.plot([tetrahedron[1][0], tetrahedron[2][0]], [tetrahedron[1][1], tetrahedron[2][1]], [tetrahedron[1][2], tetrahedron[2][2]], marker='o', linestyle='-')
-ax.plot([tetrahedron[2][0], tetrahedron[3][0]], [tetrahedron[2][1], tetrahedron[3][1]], [tetrahedron[2][2], tetrahedron[3][2]], marker='o', linestyle='-')
-ax.plot([tetrahedron[3][0], tetrahedron[1][0]], [tetrahedron[3][1], tetrahedron[1][1]], [tetrahedron[3][2], tetrahedron[1][2]], marker='o', linestyle='-')
-
-# Set axis labels
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
-
-# Show the plot
-plt.show()
-
-
-
-
+    return {'centre': centre, 'radius': r}

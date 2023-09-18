@@ -46,62 +46,37 @@ def superTetrahedron(vertices: list[list]) -> list[list]:
     return [v, v0, v1, v2]
 
 
-# def circumCircle(triangle: list[list]) -> dict:
-#     """
-#     A method to determine the circum-circle of a given triangle.
-#     :param triangle: the target triangle
-#     :return: the circum-circle which is defined by its centre & radius
-#     """
-#
-#     if triangle[0][0] - triangle[1][0] == 0:
-#         # If slope doesn't exist, then the slope after rotating 90° is 0
-#         k1 = 0
-#         if triangle[1][1] - triangle[2][1] == 0:
-#             # if slope is 0, then the slope after rotating 90° is infinity
-#             k2 = 'infinity'
-#         else:
-#             k2 = -1 / ((triangle[1][1] - triangle[2][1]) / (triangle[1][0] - triangle[2][0]))
-#     elif triangle[1][0] - triangle[2][0] == 0:
-#         # If slope doesn't exist, then the slope after rotating 90° is 0
-#         k2 = 0
-#         if triangle[0][1] - triangle[1][1] == 0:
-#             # if slope is 0, then the slope after rotating 90° is infinity
-#             k1 = 'infinity'
-#         else:
-#             k1 = -1 / ((triangle[0][1] - triangle[1][1]) / (triangle[0][0] - triangle[1][0]))
-#     else:
-#         if triangle[0][1] - triangle[1][1] == 0:
-#             # if slope is 0, then the slope after rotating 90° is infinity
-#             k1 = 'infinity'
-#         else:
-#             k1 = -1 / ((triangle[0][1] - triangle[1][1]) / (triangle[0][0] - triangle[1][0]))
-#         if triangle[1][1] - triangle[2][1] == 0:
-#             # if slope is 0, then the slope after rotating 90° is infinity
-#             k2 = 'infinity'
-#         else:
-#             k2 = -1 / ((triangle[1][1] - triangle[2][1]) / (triangle[1][0] - triangle[2][0]))
-#
-#     mid1 = [(triangle[0][0] + triangle[1][0]) / 2, (triangle[0][1] + triangle[1][1]) / 2]
-#     mid2 = [(triangle[1][0] + triangle[2][0]) / 2, (triangle[1][1] + triangle[2][1]) / 2]
-#
-#     if triangle[0][1] - triangle[1][1] == 0:
-#         # If slope equals to 0, then the slope after rotating 90° doesn't exist
-#         x = mid1[0]
-#         y = k2 * (x - mid2[0]) + mid2[1]
-#     elif triangle[1][1] - triangle[2][1] == 0:
-#         # If slope equals to 0, then the slope after rotating 90° doesn't exist
-#         x = mid2[0]
-#         y = k1 * (x - mid1[0]) + mid1[1]
-#     else:
-#         x = (k1 * mid1[0] - k2 * mid2[0] + mid2[1] - mid1[1]) / (k1 - k2)
-#         y = k1 * (x - mid1[0]) + mid1[1]
-#     r = np.linalg.norm(np.array(x, y) - np.array(triangle[0]))
-#     # Compute radius
-#     centre = [x, y]
-#
-#     return {'centre': centre, 'radius': r}
-#
-#
+def circumSphere(tetrahedron: list[list]) -> dict:
+    """
+    A method to determine the circum-sphere of a given tetrahedron.
+    :param tetrahedron: the target tetrahedron
+    :return: the circum-sphere which is defined by its centre & radius
+    """
+    n1 = np.array(tetrahedron[0]) - np.array(tetrahedron[1])
+    n1.tolist()
+    n2 = np.array(tetrahedron[0]) - np.array(tetrahedron[2])
+    n2.tolist()
+    n3 = np.array(tetrahedron[0]) - np.array(tetrahedron[3])
+    n3.tolist()
+    A = [n1, n2, n3]
+
+    mid1 = (np.array(tetrahedron[0]) + np.array(tetrahedron[1])) / 2
+    mid1.tolist()
+    mid2 = (np.array(tetrahedron[0]) + np.array(tetrahedron[2])) / 2
+    mid2.tolist()
+    mid3 = (np.array(tetrahedron[0]) + np.array(tetrahedron[3])) / 2
+    mid3.tolist()
+    b1 = np.dot(n1, mid1)
+    b2 = np.dot(n2, mid2)
+    b3 = np.dot(n3, mid3)
+    b = [b1, b2, b3]
+
+    centre = np.linalg.solve(A, b)
+    r = np.linalg.norm(np.array(centre) - np.array(tetrahedron[0]))
+
+    return {'centre': centre, 'radius': r}
+
+
 # def BowyerWatson2d(vertices: list[list]) -> list[list[list]]:
 #     """
 #     The implementation of Bowyer–Watson algorithm in 2d, in order to generate
