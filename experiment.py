@@ -77,3 +77,51 @@ def circumSphere(tetrahedron: list[list]) -> dict:
     r = np.linalg.norm(np.array(centre) - np.array(tetrahedron[0]))
 
     return {'centre': centre, 'radius': r}
+
+
+# Illustration for the super tetrahedron and its circum-sphere, given a list of random vertices
+vertices = [[random.uniform(1, 100), random.uniform(1, 100), random.uniform(1, 100)] for _ in range(100)]
+tetrahedron = superTetrahedron(vertices)
+
+circum_sphere = circumSphere(tetrahedron)
+
+# Sphere parameters
+center = circum_sphere['centre']  # Center of the sphere
+radius = circum_sphere['radius']  # Radius of the sphere
+
+# Create a grid of points for the sphere
+phi = np.linspace(0, np.pi, 20)
+theta = np.linspace(0, 2 * np.pi, 20)
+phi, theta = np.meshgrid(phi, theta)
+
+# Convert spherical coordinates to Cartesian coordinates
+x = center[0] + radius * np.sin(phi) * np.cos(theta)
+y = center[1] + radius * np.sin(phi) * np.sin(theta)
+z = center[2] + radius * np.cos(phi)
+
+# Extract x, y, and z coordinates
+x_coords, y_coords, z_coords = zip(*vertices)
+
+tetrahedron = np.array(tetrahedron)
+# Create a 3D scatter plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(x, y, z, color='blue', alpha=0, shade=True, cmap='viridis')
+ax.scatter(x_coords, y_coords, z_coords, c='green', marker='*')
+ax.scatter(tetrahedron[:, 0], tetrahedron[:, 1], tetrahedron[:, 2], c='blue', marker='o')
+
+# Plot the six edges of the super tetrahedron
+ax.plot([tetrahedron[0][0], tetrahedron[1][0]], [tetrahedron[0][1], tetrahedron[1][1]], [tetrahedron[0][2], tetrahedron[1][2]], marker='o', linestyle='-', c='r')
+ax.plot([tetrahedron[0][0], tetrahedron[2][0]], [tetrahedron[0][1], tetrahedron[2][1]], [tetrahedron[0][2], tetrahedron[2][2]], marker='o', linestyle='-', c='r')
+ax.plot([tetrahedron[0][0], tetrahedron[3][0]], [tetrahedron[0][1], tetrahedron[3][1]], [tetrahedron[0][2], tetrahedron[3][2]], marker='o', linestyle='-', c='r')
+ax.plot([tetrahedron[1][0], tetrahedron[2][0]], [tetrahedron[1][1], tetrahedron[2][1]], [tetrahedron[1][2], tetrahedron[2][2]], marker='o', linestyle='-', c='r')
+ax.plot([tetrahedron[2][0], tetrahedron[3][0]], [tetrahedron[2][1], tetrahedron[3][1]], [tetrahedron[2][2], tetrahedron[3][2]], marker='o', linestyle='-', c='r')
+ax.plot([tetrahedron[3][0], tetrahedron[1][0]], [tetrahedron[3][1], tetrahedron[1][1]], [tetrahedron[3][2], tetrahedron[1][2]], marker='o', linestyle='-', c='r')
+
+# Set axis labels
+ax.set_xlabel('X Label')
+ax.set_ylabel('Y Label')
+ax.set_zlabel('Z Label')
+
+# Show the plot
+plt.show()
