@@ -1,6 +1,7 @@
 import re
 import numpy as np
 from maniflow.mesh import Face, Mesh
+from maniflow.globals import GLOBALS
 
 
 class OBJFile:
@@ -53,12 +54,13 @@ class OBJFile:
         :param filename: the .obj file to write to
         :return:
         """
+        decimalPlaces = -int(np.log10(GLOBALS.PRECISION))
         with open(filename, "w") as file:  # we open the specified file
             content = str()  # this will store  all  the mesh data in .obj file format
             for vertex in mesh.vertices:
                 content += "v"  # we write a 'v' at the beginning of the line and add all coordinates
                 for entry in vertex:
-                    content += " %.5f" % entry  # the decimal  precision is set to five decimal places
+                    content += (" %." + str(decimalPlaces) + "f") % entry
                 content += "\n"
 
             for face in mesh.faces:
