@@ -70,5 +70,14 @@ class TestMeshUnion(unittest.TestCase):
         m = Mesh.union(cube, cone, cube.copy())
         self.assertEqual(len(connectedComponents(m)), 3)
 
+
+class TestConnectionComponents_num(unittest.TestCase):
+    def test__connection_components_num(self):
+        self.assertEqual(connectedComponents_num(OBJFile.read("examples/cube.obj")), 1)
+        self.assertEqual(connectedComponents_num(OBJFile.read("examples/cone.obj")), 1)
+        self.assertEqual(connectedComponents_num(OBJFile.read("examples/test.obj")), 2)
+        self.assertEqual(connectedComponents_num(OBJFile.read("examples/moebius.obj")), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

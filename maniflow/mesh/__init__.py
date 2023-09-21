@@ -103,6 +103,40 @@ class Face:
         self.setNormal(normal / np.linalg.norm(normal))
 
 
+class Dart:
+    """
+    A class represents the basic element of the cellular decomposition of meshes.
+    """
+
+    def __init__(self):
+        """
+        A dart contains its adjacency  information of type 0-2.
+        """
+        self.alpha0 = None
+        self.alpha1 = None
+        self.alpha2 = None
+        self.face_label = Face
+        self.edge_label = tuple
+        self.vertex_label = int
+
+    def compareDarts(self, other: "Dart"):
+        """
+        Update adjacency of darts.
+        """
+        if self.vertex_label != other.vertex_label and (self.edge_label == other.edge_label or self.edge_label == other.edge_label[::-1]) and self.face_label == other.face_label:
+            self.alpha0 = other
+        if self.vertex_label == other.vertex_label and self.face_label == other.face_label:
+            if self.edge_label != other.edge_label and self.edge_label != other.edge_label[::-1]:
+                self.alpha1 = other
+            elif self.alpha1 is None:
+                self.alpha1 = other
+        if self.vertex_label == other.vertex_label and (self.edge_label == other.edge_label or self.edge_label == other.edge_label[::-1]):
+            if self.face_label != other.face_label:
+                self.alpha2 = other
+            elif self.alpha2 is None:
+                self.alpha2 = other
+
+
 class Mesh:
     """
     A class represent and store mesh data. Meshes consist of faces and vertices.
@@ -116,6 +150,7 @@ class Mesh:
         self.faces = list()
         self.edges = list()
         self.vertices = list()
+        self.darts = list()
         self.__faceGraph = None  # hidden, private variable that is computed dynamically
 
     def addVertex(self, vertex: np.array):
@@ -127,6 +162,9 @@ class Mesh:
     def addEdge(self, edge: tuple):
         self.edges.append(edge)
 
+    def addDart(self, dart: Dart):
+        self.darts.append(dart)
+
     def updateNormals(self):
         """
         A method that updates all normal vectors according to the updateNormal method for every face in the mesh.
@@ -134,6 +172,35 @@ class Mesh:
         """
         for face in self.faces:
             face.updateNormal()
+
+    def updateDarts(self):
+        """
+        A method that generates the combinatorial structure corresponding to the mesh, by traversing all (face, edge, vertex) tuple.
+        """
+
+        for face in self.faces:
+            for i in range(len(face.vertices)):
+                dart_left = Dart()
+                dart_right = Dart()
+                dart_left.face_label = face
+                dart_left.edge_label = (face.vertices[i-1], face.vertices[i])
+                dart_left.vertex_label = face.vertices[i]
+                dart_right.face_label = face
+                dart_right.edge_label = (face.vertices[i], face.vertices[i+1])
+                dart_right.vertex_label = face.vertices[i]
+                self.addDart(dart_left)
+                self.addDart(dart_right)    # Each vertex in each face gives 2 darts, belonging to different edges.
+        for this in self.darts:
+            for that in self.darts:
+                this.compareDarts(that)
+
+    def simplifyDarts(self):
+        """
+        A method which simplifies the combinatorial structure(darts), leaving homotopy & homological features unchanged.
+        """
+        # remains to be done.
+
+
 
     def copy(self) -> "Mesh":
         return copy.deepcopy(self)
@@ -242,3 +309,7 @@ class Mesh:
             self.__faceGraph = faceGraph(self)
 
         return self.__faceGraph
+
+
+
+

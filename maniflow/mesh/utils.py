@@ -1,6 +1,7 @@
 import functools
 import numpy as np
 from maniflow.mesh import Mesh, Face
+from maniflow.utils import Algebra
 
 
 def isBoundaryVertex(vertex: int, mesh: Mesh) -> bool:
@@ -242,6 +243,44 @@ def eulerCharacteristic(mesh: Mesh) -> int:
     """
     return mesh.v - mesh.e + mesh.f
 
+def boundary_1(mesh: Mesh) -> np.array:
+    mtrx = np.zeros((mesh.e, mesh.f), dtype=int)
+    for colm, face in enumerate(mesh.faces):
+        for i in range(len(face)):
+            try:
+                row = mesh.edges.index((face.vertices[i-1], face.vertices[i]))
+                mtrx[row, colm] = 1
+            except ValueError:
+                row = mesh.edges.index((face.vertices[i], face.vertices[i-1]))
+                mtrx[row, colm] = -1
+    return mtrx
+
+
+def boundary_0(mesh: Mesh) -> np.array:
+    mtrx = np.zeros((mesh.v, mesh.e), dtype=int)
+    for colm, edge in enumerate(mesh.edges):
+        start, end = edge
+        mtrx[start, colm] = 1
+        mtrx[end, colm] = -1
+    return mtrx
+
+
+def Homology_1(mesh: Mesh) -> np.array:
+    return Algebra.homology(boundary_1(mesh), boundary_0(mesh))
+
+def Homology_2(mesh: Mesh) -> np.array:
+    return Algebra.homology(mtrx_out=boundary_1(mesh))
+
+
+def Homology_0(mesh: Mesh) -> np.array:
+    return Algebra.homology(mtrx_in=boundary_0(mesh))
+
+
+def isOrientable_hmlgc(mesh: Mesh) -> bool:
+    return (Homology_1(mesh) == 0).all()
+
+def connectedComponents_num(mesh: Mesh) -> int:
+    return np.count_nonzero(Homology_0(mesh) == 0)
 
 class VertexFunction(object):
     """
