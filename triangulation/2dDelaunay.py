@@ -31,7 +31,6 @@ def circumCircle(triangle: list[list]) -> dict:
     :param triangle: the target triangle
     :return: the circum-circle which is defined by its centre & radius
     """
-
     if triangle[0][0] - triangle[1][0] == 0:
         # If slope doesn't exist, then the slope after rotating 90° is 0
         k1 = 0
@@ -74,7 +73,8 @@ def circumCircle(triangle: list[list]) -> dict:
     else:
         x = (k1 * mid1[0] - k2 * mid2[0] + mid2[1] - mid1[1]) / (k1 - k2)
         y = k1 * (x - mid1[0]) + mid1[1]
-    r = np.linalg.norm(np.array(x, y) - np.array(triangle[0]))
+    r = np.linalg.norm(np.array([x, y]) - np.array(triangle[0]))
+    # r = ((x - triangle[0][0]) ** 2 + (y - triangle[0][1]) ** 2) ** 0.5
     # Compute radius
     centre = [x, y]
 

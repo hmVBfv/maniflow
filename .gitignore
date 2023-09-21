@@ -40,4 +40,6 @@ __pycache__
 .vscode
 #play
 playground.py
+#tryScipy.py
+tryScipy.py
 
