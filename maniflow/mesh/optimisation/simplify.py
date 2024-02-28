@@ -1,6 +1,26 @@
 import numpy as np
 from maniflow.mesh import Mesh, Face
 
+def computePlaneEquation(vert1: int, vert2: int, vert3: int) -> list:
+    vec1 = vert2 - vert1
+    vec2 = vert3 - vert1
+
+    normal_vec = np.cross(vec1, vec2)
+    normalized_vec = normal_vec / np.linalg.norm(normal_vec)
+    d_coefficient = -np.dot(normalized_vec, vert1)
+
+    plane_equation = np.concatenate((normalized_vec, [d_coefficient]))
+    return plane_equation
+
+def computeFundamentalErrorQuadric(p: list) -> np.array:
+    Kp = np.zeros((4,4))
+    for i, j in range(4):
+        Kp[i, j] = p[i] * p[j]
+    return Kp
+
+def computeInitialQ(vert: int):
+    pass
+
 def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
     """
     Returns an adjacency matrix indicating valid pairs of vertices in the mesh.
@@ -40,3 +60,7 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
                         validityMatrix[face.vertices[i], face.vertices[j]] = 1
 
     return validityMatrix
+
+
+def optimalContractionPoint(v1: int, v2: int):
+    pass
