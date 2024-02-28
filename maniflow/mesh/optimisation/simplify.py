@@ -42,7 +42,6 @@ def contractingCost(mesh: Mesh, vert1: int, vert2: int) -> int:
     cost = np.dot(vbar, cost)
     return cost
 
-
 def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
     """
     Returns an adjacency matrix indicating valid pairs of vertices in the mesh.
@@ -66,7 +65,6 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
                 if validityMatrix[face.vertices[i], face.vertices[j]] != 1:
                     # Matrix is symmetric
                     validityMatrix[face.vertices[i], face.vertices[j]] = 1
-                    validityMatrix[face.vertices[i], face.vertices[j]] = 1
     
     # tol != 0 implies that we want to do non-edge contraction as well
     if tol != 0:
@@ -76,14 +74,13 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
             for j in range(i, mesh.v):
                 # Ignore adjacent vertices for efficiency
                 if validityMatrix[face.vertices[i], face.vertices[j]] != 1:
-                    # If within tolerance, mark vertices down
+                    # If within tolerance, mark vertices down with 2 to be able to differentiate
                     if np.linalg.norm(face.vertices[i], face.vertices[j]) < tol:
-                        validityMatrix[face.vertices[i], face.vertices[j]] = 1
-                        validityMatrix[face.vertices[i], face.vertices[j]] = 1
+                        validityMatrix[face.vertices[i], face.vertices[j]] = 2
 
     return validityMatrix
 
-def simplifyByContraction(mesh: Mesh):
+def simplifyByContraction(mesh: Mesh, tol = 0):
     Q_list = []
     for i in range(mesh.v):
         Q_list[i] = computeInitialQ(mesh, mesh.vertices[i])
@@ -92,8 +89,29 @@ def simplifyByContraction(mesh: Mesh):
     min_heap = []
     for i in range(mesh.v):
         for j in range(i+1, mesh.v):
-            if validityMatrix[i, j] == 1:
+            if validityMatrix[i, j] != 0:
                 heapq.heappush(min_heap, (contractingCost(mesh.vertices[i], mesh.vertices[j]), [i, j]))
-                # check whether heap correct approach as after pop we need to update all adjacents of vertices used
-                # maybe just sort by size via sorted()?
-                # heap is not a stable sort, possible problems?
+    min_cost = heapq.heappop(min_heap)
+    a, b = min_cost[1]
+
+    # Updating Matrix with new vbar
+    Q1, Q2, vbar = optimalContractionPoint(mesh, mesh.vertices[a], mesh.vertices[b])
+    mesh.vertices[a] = vbar
+    if validityMatrix[a, b] == 1:
+        for j in range(b+1, mesh.v):
+            if validityMatrix[b, j] == 1:
+                validityMatrix[a, j] == 1
+    elif validityMatrix[a, b] == 2:
+        for j in range(b+1, mesh.v):
+            if validityMatrix[a, j] == 2:
+                if np.linalg.norm(mesh.vertices[a], mesh.vertices[j]) < tol:
+                    validityMatrix[a, j] == 2
+                else:
+                    validityMatrix[a, j] == 0
+            if validityMatrix[b, j] == 2:
+                if np.linalg.norm(mesh.vertices[a], mesh.vertices[j]) < tol:
+                    validityMatrix[a, j] == 2
+                else:
+                    validityMatrix[a, j] == 0
+    validityMatrix[b, :] = 0
+    validityMatrix[:, b] = 0
