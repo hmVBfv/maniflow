@@ -1,5 +1,6 @@
 import numpy as np
 from maniflow.mesh import Mesh, Face
+from maniflow.mesh.utils import adjacentFaces
 
 def computePlaneEquation(vert1: int, vert2: int, vert3: int) -> list:
     vec1 = vert2 - vert1
@@ -18,8 +19,21 @@ def computeFundamentalErrorQuadric(p: list) -> np.array:
         Kp[i, j] = p[i] * p[j]
     return Kp
 
-def computeInitialQ(vert: int):
-    pass
+def computeInitialQ(mesh: Mesh, vert: int):
+    adjacent_faces = adjacentFaces(mesh, vert)
+    Q = 0
+    for face in adjacent_faces:
+        plane_equation = computePlaneEquation(face.vertices[0], face.vertices[1], face.vertices[2])
+        Q += computeFundamentalErrorQuadric(plane_equation)
+    return Q
+
+def optimalContractionPoint(mesh: Mesh, v1: int, v2: int) -> np.array:
+    Q1 = computeInitialQ(mesh, v1)
+    Q2 = computeInitialQ(mesh, v2)
+    Q = Q1 + Q2
+    Q[-1] = [0, 0, 0, 1]
+    vbar = np.dot(np.linalg.pinv(Q), np.array([0, 0, 0, 1]))
+    return vbar
 
 def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
     """
@@ -60,7 +74,3 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
                         validityMatrix[face.vertices[i], face.vertices[j]] = 1
 
     return validityMatrix
-
-
-def optimalContractionPoint(v1: int, v2: int):
-    pass
