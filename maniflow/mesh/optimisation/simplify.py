@@ -1,4 +1,5 @@
 import numpy as np
+import heapq
 from maniflow.mesh import Mesh, Face
 from maniflow.mesh.utils import adjacentFaces
 
@@ -19,7 +20,7 @@ def computeFundamentalErrorQuadric(p: list) -> np.array:
         Kp[i, j] = p[i] * p[j]
     return Kp
 
-def computeInitialQ(mesh: Mesh, vert: int):
+def computeInitialQ(mesh: Mesh, vert: int) -> np.array:
     adjacent_faces = adjacentFaces(mesh, vert)
     Q = 0
     for face in adjacent_faces:
@@ -27,13 +28,20 @@ def computeInitialQ(mesh: Mesh, vert: int):
         Q += computeFundamentalErrorQuadric(plane_equation)
     return Q
 
-def optimalContractionPoint(mesh: Mesh, v1: int, v2: int) -> np.array:
-    Q1 = computeInitialQ(mesh, v1)
-    Q2 = computeInitialQ(mesh, v2)
+def optimalContractionPoint(mesh: Mesh, vert1: int, vert2: int) -> list:
+    Q1 = computeInitialQ(mesh, vert1)
+    Q2 = computeInitialQ(mesh, vert2)
     Q = Q1 + Q2
     Q[-1] = [0, 0, 0, 1]
     vbar = np.dot(np.linalg.pinv(Q), np.array([0, 0, 0, 1]))
-    return vbar
+    return Q1, Q2, vbar
+
+def contractingCost(mesh: Mesh, vert1: int, vert2: int) -> int:
+    Q1, Q2, vbar = optimalContractionPoint(mesh, vert1, vert2)
+    cost = np.dot((Q1 + Q2), vbar)
+    cost = np.dot(vbar, cost)
+    return cost
+
 
 def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
     """
@@ -74,3 +82,18 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
                         validityMatrix[face.vertices[i], face.vertices[j]] = 1
 
     return validityMatrix
+
+def simplifyByContraction(mesh: Mesh):
+    Q_list = []
+    for i in range(mesh.v):
+        Q_list[i] = computeInitialQ(mesh, mesh.vertices[i])
+    validityMatrix = getValidPairs(mesh, tol = 0)
+
+    min_heap = []
+    for i in range(mesh.v):
+        for j in range(i+1, mesh.v):
+            if validityMatrix[i, j] == 1:
+                heapq.heappush(min_heap, (contractingCost(mesh.vertices[i], mesh.vertices[j]), [i, j]))
+                # check whether heap correct approach as after pop we need to update all adjacents of vertices used
+                # maybe just sort by size via sorted()?
+                # heap is not a stable sort, possible problems?
