@@ -1,6 +1,5 @@
 import numpy as np
-import heapq
-from maniflow.mesh import Mesh, Face
+from maniflow.mesh import Mesh
 from maniflow.mesh.utils import adjacentFaces
 
 def computePlaneEquation(vert1: int, vert2: int, vert3: int) -> list:
@@ -28,16 +27,14 @@ def computeInitialQ(mesh: Mesh, vert: int) -> np.array:
         Q += computeFundamentalErrorQuadric(plane_equation)
     return Q
 
-def optimalContractionPoint(mesh: Mesh, vert1: int, vert2: int) -> list:
-    Q1 = computeInitialQ(mesh, vert1)
-    Q2 = computeInitialQ(mesh, vert2)
+def optimalContractionPoint(Q1: np.array, Q2: np.array) -> list:
     Q = Q1 + Q2
     Q[-1] = [0, 0, 0, 1]
     vbar = np.dot(np.linalg.pinv(Q), np.array([0, 0, 0, 1]))
-    return Q1, Q2, vbar
+    return vbar
 
-def contractingCost(mesh: Mesh, vert1: int, vert2: int) -> int:
-    Q1, Q2, vbar = optimalContractionPoint(mesh, vert1, vert2)
+def contractingCost(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.array) -> int:
+    vbar = optimalContractionPoint(mesh, vert1, vert2)
     cost = np.dot((Q1 + Q2), vbar)
     cost = np.dot(vbar, cost)
     return cost
@@ -76,7 +73,7 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
                 if validityMatrix[face.vertices[i], face.vertices[j]] != 1:
                     # If within tolerance, mark vertices down with 2 to be able to differentiate
                     if np.linalg.norm(face.vertices[i], face.vertices[j]) < tol:
-                        validityMatrix[face.vertices[i], face.vertices[j]] = 2
+                        validityMatrix[face.vertices[i], face.vertices[j]] = 1
 
     return validityMatrix
 
@@ -84,34 +81,35 @@ def simplifyByContraction(mesh: Mesh, tol = 0):
     Q_list = []
     for i in range(mesh.v):
         Q_list[i] = computeInitialQ(mesh, mesh.vertices[i])
-    validityMatrix = getValidPairs(mesh, tol = 0)
+    validityMatrix = getValidPairs(mesh, tol)
 
-    min_heap = []
+    
+    cost_dict = {}
     for i in range(mesh.v):
         for j in range(i+1, mesh.v):
             if validityMatrix[i, j] != 0:
-                heapq.heappush(min_heap, (contractingCost(mesh.vertices[i], mesh.vertices[j]), [i, j]))
-    min_cost = heapq.heappop(min_heap)
-    a, b = min_cost[1]
+                cost_dict[(i, j)] = contractingCost(mesh, mesh.vertices[i], mesh.vertices[j], Q_list[i], Q_list[j])
+    cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
+    min_key = min(cost_dict, key=cost_dict.get)
+    cost_dict.pop(min_key)
+    a, b = min_key
 
+    while cost_dict:
     # Updating Matrix with new vbar
-    Q1, Q2, vbar = optimalContractionPoint(mesh, mesh.vertices[a], mesh.vertices[b])
-    mesh.vertices[a] = vbar
-    if validityMatrix[a, b] == 1:
+        Q1, Q2, vbar = optimalContractionPoint(Q_list[a], Q_list[b])
+        mesh.vertices[a] = vbar
+        Q_list[a] = Q1 + Q2
+        Q_list[b] = Q1 + Q2
         for j in range(b+1, mesh.v):
             if validityMatrix[b, j] == 1:
+                cost_dict.pop((b, j))
                 validityMatrix[a, j] == 1
-    elif validityMatrix[a, b] == 2:
-        for j in range(b+1, mesh.v):
-            if validityMatrix[a, j] == 2:
-                if np.linalg.norm(mesh.vertices[a], mesh.vertices[j]) < tol:
-                    validityMatrix[a, j] == 2
-                else:
-                    validityMatrix[a, j] == 0
-            if validityMatrix[b, j] == 2:
-                if np.linalg.norm(mesh.vertices[a], mesh.vertices[j]) < tol:
-                    validityMatrix[a, j] == 2
-                else:
-                    validityMatrix[a, j] == 0
-    validityMatrix[b, :] = 0
-    validityMatrix[:, b] = 0
+                cost_dict[(a, j)] = contractingCost(mesh, mesh.vertices[a], mesh.vertices[j], Q_list[a], Q_list[j])
+
+        validityMatrix[b, :] = 0
+        validityMatrix[:, b] = 0
+
+        cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
+        min_key = min(cost_dict, key=cost_dict.get)
+        cost_dict.pop(min_key)
+        a, b = min_key
