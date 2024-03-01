@@ -141,17 +141,28 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
     return validityMatrix
 
 def simplifyByContraction(mesh: Mesh, tol = 0):
+    # TODO:
+    # Richtige Umsetzung von temporaerem Mesh zur Manipulation
+    # Ziel: Eliminieren des zweiten Vertex' beim Zusammenziehen (der Erste bekommt die neuen Werte)
+    # Ggf. coincidingVertices verwenden? Effizient?
+    # TODO:
+    # Stopp-Bedingung fuers Zusammenziehen
+    # Ziel: Nicht in einzelnen nicht-zusammenhaengenden Punkten enden
+    # Wann Stopp? Warum?
+    
+    tmp_mesh = mesh.copy()
+    
     Q_list = []
-    for i in range(mesh.v):
-        Q_list[i] = computeInitialQ(mesh, mesh.vertices[i])
-    validityMatrix = getValidPairs(mesh, tol)
+    for i in range(tmp_mesh.v):
+        Q_list[i] = computeInitialQ(tmp_mesh, tmp_mesh.vertices[i])
+    validityMatrix = getValidPairs(tmp_mesh, tol)
 
     
     cost_dict = {}
-    for i in range(mesh.v):
-        for j in range(i+1, mesh.v):
+    for i in range(tmp_mesh.v):
+        for j in range(i+1, tmp_mesh.v):
             if validityMatrix[i, j] != 0:
-                cost_dict[(i, j)] = contractingCost(mesh, mesh.vertices[i], mesh.vertices[j], Q_list[i], Q_list[j])
+                cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
     cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
     min_key = min(cost_dict, key=cost_dict.get)
     cost_dict.pop(min_key)
@@ -160,14 +171,14 @@ def simplifyByContraction(mesh: Mesh, tol = 0):
     while cost_dict:
     # Updating Matrix with new vbar
         Q1, Q2, vbar = optimalContractionPoint(Q_list[a], Q_list[b])
-        mesh.vertices[a] = vbar
+        tmp_mesh.vertices[a] = vbar
         Q_list[a] = Q1 + Q2
         Q_list[b] = Q1 + Q2
-        for j in range(b+1, mesh.v):
+        for j in range(b+1, tmp_mesh.v):
             if validityMatrix[b, j] == 1:
                 cost_dict.pop((b, j))
                 validityMatrix[a, j] == 1
-                cost_dict[(a, j)] = contractingCost(mesh, mesh.vertices[a], mesh.vertices[j], Q_list[a], Q_list[j])
+                cost_dict[(a, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
 
         validityMatrix[b, :] = 0
         validityMatrix[:, b] = 0
