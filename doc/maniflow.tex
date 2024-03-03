@@ -1,0 +1,87 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{mlmodern}
+\usepackage{subfig}
+\usepackage{pgfornament}
+\usepackage{graphicx}
+\usepackage[some]{background}
+\usepackage[T1]{fontenc}
+\usepackage[left=2.5cm,right=2.5cm]{geometry}
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\usepackage{hyperref, xurl}
+\usepackage{qrcode}
+\usepackage{authblk} % for author info
+\usepackage{svg}
+\usepackage{listings}
+\usepackage{epigraph} % used for the quotes
+
+\newcommand{\maniflow}{\texttt{maniflow}}
+\newcommand{\code}[1]{\texttt{#1}} % inline code setting
+\renewcommand{\lstlistingname}{Code}
+
+\definecolor{codebg}{RGB}{230,230,230}
+\lstset {
+    breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+    breaklines=true,                 % sets automatic line breaking
+    captionpos=b,                    % sets the caption-position to bottom
+    tabsize=4,
+    %showstringspaces=false,
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=2pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny, % the style that is used for the line-numbers
+    %upquote=true,
+    backgroundcolor = \color{codebg},
+    basicstyle=\small\ttfamily, % basic font setting
+    emph={int,char,double,float,unsigned,void,bool},
+    %emphstyle={\color{blue}},
+    escapechar=\&,
+    columns=fixed
+}
+
+\usepackage{collectbox}
+
+\makeatletter
+\newcommand{\boxedcode}{%
+    \collectbox{%
+        \setlength{\fboxsep}{5pt}%
+        \fbox{\BOXCONTENT}%
+    }%
+}
+\makeatother
+
+\newtheorem{defi}{Definition}
+\newtheorem{ex}{Example}
+\newtheorem{prop}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{kor}{Corollary}
+
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\V}{\mathcal{V}}
+\newcommand{\E}{\mathcal{E}}
+
+\author[]{Felix Widmaier}
+\author[]{Robin Mark Riegraf}
+\author[]{Yangshan Xiang}
+\author[]{Minming Zhao}
+\affil[]{Georg-August-Universität Göttingen}
+%\date{}
+
+\usepackage{lipsum}
+
+\begin{document}
+\input{frontpage}
+\input{sections/frontmatter}
+\newpage
+\input{sections/libinfo}
+\input{sections/introduction}
+\end{document}
