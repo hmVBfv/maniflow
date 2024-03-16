@@ -5,7 +5,7 @@ First, we will look at the basic mathematical concepts that ultimately underpin 
 \end{defi}
 For a mesh $M = (\mathcal{V}_M, \mathcal{F}_M)$ we will often denote $V_M = \vert\mathcal{V}_M\vert$ and $F_M = \vert\mathcal{F}_M\vert$.
 \paragraph{Remark.} Meshes $M$ can be considered as $2$-dimensional simplicial complexes. Thus for $2$-dimensional manifolds $\Tilde{M}\subset V$ we may find a \textit{triangulation} simplicial complex $K$ of $\Tilde{M}$. The corresponding mesh will be called \textit{triangulation} mesh of the manifold $\Tilde{M}$.
-\begin{ex}[Tetrahedron] Let 
+\begin{ex}[Tetrahedron]\label{ex:tetra} Let 
 \begin{align*}
     \mathcal{V} = \left\{\left(\sqrt{\frac89},0,-\frac13\right),\left(-\sqrt{\frac29},\sqrt{\frac23},-\frac13\right),\left(-\sqrt{\frac29},-\sqrt{\frac23},-\frac13\right), \left(0,0,1\right)\right\}\subset\R^3
 \end{align*}
@@ -38,6 +38,25 @@ tetra.faces = [Face(tetra, *list(i)) for i in subsets]
 \end{lstlisting}
 This way, we obtain the \texttt{Mesh} object \texttt{tetra} which represents a tetrahedron.
 \end{ex}
+\subsection{Reading and writing \texttt{.obj} files}\label{sec:objfiles}
+The repeated computation of meshes can require a lot of computing capacity under certain circumstances. It can also be difficult to programme complicated geometries line by line in the code. To avoid these difficulties, \maniflow{} supports the \texttt{.obj} file format.
+This makes it possible to export meshes for further editing in other programmes (e.g. \href{https://www.blender.org/}{Blender} or similar) or to display them\footnote{if you do not want to use the internal renderer of \maniflow{}}.
+You can also use third-party software to create complicated geometries relatively easily and import them into \maniflow{}.
+Interaction with .obj files is made possible by the maniflow.mesh.obj.OBJFile class.
+\paragraph{Caution:} \texttt{maniflow.mesh.obj.OBJFile} currently disregards any normal vectors, texture coordinates, line elements etc. defined in the \texttt{.obj} file.
+Only the coordinates of the vertices are taken into account and for the faces only the indices of the vertices that make them up are taken into consideration.
+\begin{ex}
+    Consider the \texttt{Mesh} object \texttt{tetra} from example \ref{ex:tetra}. To store this mesh in a \texttt{.obj} file, we may use
+    \begin{lstlisting}
+from maniflow.mesh.obj import OBJFile
+
+OBJFile.write(tetra, "examples/tetrahedron.obj")
+    \end{lstlisting}
+    This code produces the file \url{examples/tetrahedron.obj}. In order to load a mesh into \maniflow{}, simply use
+    \begin{lstlisting}
+mesh = OBJFile.read("examples/tetrahedron.obj")
+    \end{lstlisting}
+\end{ex}
 \subsection{\texttt{maniflow.mesh.utils.VertexFunction} -- Creating meshes from parameterisations}
 The way we created a mesh of a tetrahedron in the previous example is very static and absolutely not suitable if you want to study more complicated geometries. \maniflow{}, however, provides the option of creating meshes quite easily using parameterisations. For this purpose, \maniflow{} provides the wrapper \texttt{maniflow.mesh.utils.VertexFunction}, which executes a given function on all vertices of the mesh and has the resulting mesh as output.
 \begin{ex}
@@ -58,7 +77,7 @@ shifted = shift(mesh)
     The resulting \texttt{Mesh}, \code{shifted}, is \code{mesh} shifted by the vector $\begin{pmatrix}1 & 2 & 3\end{pmatrix}^{\intercal}\in\R^3$.
 \end{ex}
 Another application of this would be the creation of meshes from parameterisations $\psi\colon \R^2\supset D\to\R^3$. Oftentimes, the domain $D$ is a cartesian product of two intervals, so $D = I_1\times I_2$.\footnote{Or to be more precise, \maniflow{} makes it easy to create meshes from parametrisations, where the domain $D$ is homoeomorphic to a square.} For this, \maniflow{} provides the class \texttt{maniflow.mesh.parameterized.Grid}.
-\begin{ex}[Moebius strip]
+\begin{ex}[Moebius strip]\label{ex:moebius_creation}
 We now turn to an example where we want to create a triangulation of a moebius strip. To this end, we will use the parametrisation
 \begin{align*}
     \psi\colon [0, 2\pi]\times [-1,1]\to\R^3,\ (u,v)\mapsto\begin{pmatrix}
@@ -88,7 +107,7 @@ u = Grid((0, 2 * np.pi), (-1, 1), 30, 10)  # create a high resolution grid
 moebiusMesh = moebius(u)  # mapping the vertices from the grid according to the parametrisation
 coincidingVertices(moebiusMesh) # remove the redundant vertices at the joint after making the moebius band
 \end{lstlisting}
-With this we obtain the \texttt{Mesh}-object \code{moebiusMesh}. Using \texttt{maniflow.mesh.obj.OBJFile}, we can write this mesh to memory as a \texttt{.obj} file
+With this we obtain the \texttt{Mesh}-object \code{moebiusMesh}. Using \texttt{maniflow.mesh.obj.OBJFile}, we can write this mesh to memory as a \texttt{.obj} file, see section \ref{sec:objfiles}
 \begin{lstlisting}
 from maniflow.mesh.obj import OBJFile
 
@@ -96,12 +115,13 @@ OBJFile.write(moebiusMesh, "examples/moebius.obj")
 \end{lstlisting}
 Unsurprisingly, one can then load this file into \href{https://www.blender.org/}{Blender} and create pictures of it etc.\footnote{\maniflow{} comes with its own simple renderer. But if you want to do more elaborated computer graphics, you might consider using some other software to render images.} Figure \ref{fig:moubius_blender} shows a screenshot taken from Blender with the \texttt{.obj} file from \href{https://gitlab.gwdg.de/yangshan.xiang/scientific-computing/-/blob/82c42c864b3e46303b208b78720b8109116c78da/examples/moebius.obj}{\url{examples/moebius.obj}}.
 \end{ex}
-\begin{figure}[ht]
+\begin{figure}[t]
     \centering
     \includegraphics[scale=0.35]{img/moebius_2023-05-23.png}
     \caption{Screenshot of \href{https://www.blender.org/}{Blender} with a moebius strip made with \maniflow{}}
     \label{fig:moubius_blender}
 \end{figure}
+\newpage
 \section{The face graph of a mesh}
 \begin{defi}[Undirected Graph]
     Let $\V_G$ be a set and $\E_G\subset\{e\in2^{\V_G}: |e|=2\}$ be a set of unordered pairs of elements from $\V_G$. The pair $G = (\V_G, \E_G)$ is then called undirected Graph. The elements from $\V_G$ are called vertices of $G$ and the elements from $\E_G$ are called edges of $G$.
@@ -218,7 +238,7 @@ The method \texttt{maniflow.mesh.utils.connectedComponents} decomposes the given
     
     \Return{$T_1$, $T_2$, $\ldots$}
 \end{algorithm}
-\paragraph{Runtime analysis.} The algorithm \ref{alg:facegraph} has a runtime complexity which lies in $O(F_M^2)$. The breadth-first traversal on the face graph has a runtime\footnote{Since on a graph with the number of vertices being $V$ and the number of edges being $E$ the breadth first search has a complexity of $O(E + V)$. As every face has at most three neighbors we obtain the given runtime complexity.} complexity of $O(F_G + 3\cdot F_G) = O(F_G)$. The computation of $\mathcal{F}_M\setminus T_n$ has also quadratic complexity $O(\vert\mathcal{F}_M\vert^2)$. Thus the overall complexity of algorithm \ref{alg:components} lies in $O(F_G^2)$.
+\paragraph{Runtime analysis.} Algorithm \ref{alg:facegraph} has a runtime complexity which lies in $O(F_M^2)$. The breadth-first traversal on the face graph has a runtime\footnote{Since on a graph with the number of vertices being $V$ and the number of edges being $E$ the breadth first search has a complexity of $O(E + V)$. As every face has at most three neighbors we obtain the given runtime complexity.} complexity of $O(F_M + 3\cdot F_M) = O(F_M)$. The computation of $\mathcal{F}_M\setminus T_n$ has also quadratic complexity $O(\vert\mathcal{F}_M\vert^2)$. Thus the overall complexity of algorithm \ref{alg:components} lies in $O(F_G^2)$.
 \begin{ex}
     In this example we analyse the connected components of the teapot from \texttt{examples/teapot.obj}. The teapot is displayed in figure \ref{fig:teapot}.
     \begin{figure}[h]
@@ -233,14 +253,18 @@ from maniflow.mesh import Mesh
 from maniflow.mesh.obj import OBJFile
 from maniflow.mesh.utils import connectedComponents, coincidingVertices
 
-teapot = OBJFile.read("examples/teapot.obj")
-coincidingVertices(teapot)
+teapot = OBJFile.read("examples/teapot.obj")  # reading the mesh from memory
+coincidingVertices(teapot)  # identifying and collapsing coinciding vertices
+
+# now we compute the connected components
 components = connectedComponents(teapot)
 
+# we can now reconstruct meshes from these lists of faces and write them to .obj files
 for i, component_list in enumerate(components):
     component = Mesh.fromFaceList(teapot, *component_list)
     OBJFile.write(component, "teapot" + str(i + 1) + ".obj")
     \end{lstlisting}
+    The resulting components are shown in figure \ref{fig:teapotcomps}.
     \begin{figure}[ht]
     \centering
     \subfloat[The lid of the teapot]{\includegraphics[width=0.4\textwidth]{img/teapot1.png}}\hfil
@@ -248,12 +272,27 @@ for i, component_list in enumerate(components):
     \subfloat[The body of the teapot]{\includegraphics[width=0.4\textwidth]{img/teapot3.png}}\hfil
     \subfloat[The spout of the teapot]{\includegraphics[width=0.4\textwidth]{img/teapot4.png}}\hfil
     \caption{The connected components of the teapot}
-    \label{fig:einsteinex}
+    \label{fig:teapotcomps}
 \end{figure}
 \end{ex}
 \subsection{Another application: checking orientability of a \texttt{Mesh}}
-Orientability of a mesh is equivalent to all vertices being aligned
-\begin{figure}
+Orientability is an important property of manifolds in geometry. For example, the area can only be meaningfully defined for orientable 2-manifolds. For 2-manifolds embedded in $\R^3$, orientability is equivalent to the existence of a continuous unit-normal vector field on the manifold. Similarly, we can extend the notion of orientability to meshes. If we consider a face spanned by the vertices $v_1,\ v_2$ and $v_3$, the normal vector is, for example given by\footnote{Note that $n$ does not necessarily have length $1$. But one may always obtain a unit normal vector by rescaling}
+\begin{align*}
+    n = (v_1 - v_2)\times (v_1 - v_3).
+\end{align*}
+Hence, the orientation or direction of $n$ is dependent upon the enumeration of the vertices that define the face. A priori it is not clear that two neighboring faces really do have ``compatible'' enumerations of their vertices. So it may happen that two neighboring faces have normal vectors that point in ``opposite'' directions.\footnote{An appeal to the reader's intuition. You have to be careful with these notions.}
+\begin{defi}[Orientation of faces]
+    Let $f = (v_1, v_2, v_3)$ be a face defined by the vertices $v_i$ for $1\leq i\leq 3$. Let $f'$ be another face that is defined by the vertices $v_1,\ v_2$ and $v_{\ast}$. We say that two faces have the same orientation, if there is a cyclic permutation $\sigma\in S_3$ such that
+    \begin{align*}
+        (f_1, f_2) = (f'_{\sigma(2)},f'_{\sigma(1)}).
+    \end{align*}
+    Where $f_i$ and $f'_i$ denote the $i$-th vertex in the faces $f$ and $f'$ respectively.
+\end{defi}
+In other words, two faces have the same orientation if they share an edge and that edge is traversed in opposite directions, when listing the vertices of the faces, see figure \ref{fig:orientation}.
+\begin{ex}
+    Consider the faces $f = (1, 2, 3)$ and $f' = (2, 3, 4)$. Then $f$ and $f'$ share the edge made up of the vertices $2$ and $3$. But both of them traverse this edge in the same direction $(2,3)$. On the other hand, if we changed the enumeration of $f'$ to $(3, 2, 4)$, the faces would have matching orientation. This is exactly the situation depicted in figure \ref{fig:orientation}.
+\end{ex}
+\begin{figure}[ht]
     \centering
     \subfloat[Non compatible orientation]{
     \begin{tikzpicture}
@@ -274,3 +313,40 @@ Orientability of a mesh is equivalent to all vertices being aligned
     \caption{Two triangles with compatible and non compatible orientations}
     \label{fig:orientation}
 \end{figure}
+In order to determine whether a given mesh is orientable or not, we can sort of ``push'' an orientation to the mesh by traversing each of the faces in breadth-first traversal and adjusting the orientations / enumerations of vertices of each of the neighboring faces for the currently traversed face.\footnote{Of course we have to remember the faces we already considered while traversing the mesh in order to avoid faces being re-oriented twice.}
+\begin{algorithm}
+    \SetKwInOut{Input}{Input}
+    \SetKwInOut{Output}{Output}
+
+    \Input{A mesh $M = (\mathcal{V}_M, \mathcal{F}_M=\{f_1,f_2,f_3\ldots\})$}
+    \caption{Pushing an orientation to a mesh}
+    \label{alg:pushorientation}
+    Store the connected components of $M$ in $\mathcal{C}$ (see algorithm \ref{alg:components})\;
+    \For{$c\in\mathcal{C}$}{
+    $visited := \emptyset$\;
+    \For{$f\in c$}{
+    \If{$f\notin visited$}{
+    Store neighbouring faces to $f$ in $neighbours$\;
+    \For{$f_n\in neighbours$}{
+    \If{$f$ and $f_n$ do not have compatible orientations}{
+    reverse the enumeration of vertices in $f_n$\;
+    }
+    }
+    $visited \leftarrow visited \cup \{ f\}$\;
+    }
+    }
+    }
+\end{algorithm}
+This is what algorithm \ref{alg:pushorientation} does. The method \texttt{maniflow.mesh.utils.pushOrientation} implements this algorithm in \maniflow{}.
+Finally, to check whether a mesh is orientable or not, we only need to iterate over all surfaces in the mesh and ask whether all neighbours have a compatible orientation. This is implemented as the method \texttt{maniflow.mesh.utils.isOrientable}.
+\paragraph{Runtime analysis.}  Algorithm \ref{alg:pushorientation} has a complexity of $O(F_M^2)$. % TODO: more details?
+\begin{ex}[Orientability of the Moebius strip]
+    Consider the \texttt{Mesh} object \texttt{moebiusMesh} from example \ref{ex:moebius_creation}. To determine whether this mesh is orientable or not, use
+    \begin{lstlisting}
+from maniflow.mesh.utils import isOrientable
+
+print(isOrientable(moebiusMesh))
+    \end{lstlisting}
+    As expected, the output will be \texttt{False} as the Moebius strip is not orientable.
+\end{ex}
+\noindent Another example that is less trivial than the Moebius strip is documented in the file \href{https://gitlab.gwdg.de/yangshan.xiang/scientific-computing/-/blob/28846b92bf3f99fa84b650267886782c43791715/examples/roman_surface.ipynb}{\url{examples/roman\_surface.ipynb}} where the so-called Roman surface is discussed.
