@@ -1,7 +1,10 @@
 import unittest
 
+import numpy as np
+
 from maniflow.mesh.utils import *
 from maniflow.mesh.obj import OBJFile
+from maniflow.geometry import Curvature
 
 
 class TestConnectionComponents(unittest.TestCase):
@@ -69,6 +72,15 @@ class TestMeshUnion(unittest.TestCase):
         cone = OBJFile.read("examples/cone.obj")
         m = Mesh.union(cube, cone, cube.copy())
         self.assertEqual(len(connectedComponents(m)), 3)
+
+
+class TestGaussianCurvature(unittest.TestCase):
+    def test_gauss_bonnet(self):
+        sphere = OBJFile.read("examples/icosphere.obj")
+        total_gauss = sum(Curvature.gaussian(sphere, v) for v in range(sphere.v))
+        euler = total_gauss / (2 * np.pi)
+        self.assertTrue(abs(euler - 2) < 1e-5, "the euler characteristic of a sphere should be 2..")
+
 
 if __name__ == "__main__":
     unittest.main()
