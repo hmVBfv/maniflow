@@ -76,6 +76,18 @@ class Face:
     def __len__(self):
         return len(self.vertices)
 
+    @property
+    def area(self):
+        """
+        A method to compute the area of a face by means of the cross product of
+        two edges that span the face
+        """
+        if len(self) == 3:
+            return np.linalg.norm(np.cross(self[0] - self[1], self[0] - self[2])) / 2
+        else:
+            return (np.linalg.norm(np.cross(self[0] - self[1], self[0] - self[2]))
+                    + np.linalg.norm(np.cross(self[3] - self[1], self[3] - self[2]))) / 2
+
 
 class Mesh(RenderObject):
     """
