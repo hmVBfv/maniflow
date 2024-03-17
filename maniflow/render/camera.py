@@ -26,6 +26,9 @@ class Camera:
         self.update()
 
     def update(self):
+        """
+        A method to (re-)compute and set the projection matrix.
+        """
         view = self.getLookAt()
         projection = self.getPerspectiveMatrix()
 
