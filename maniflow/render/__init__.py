@@ -7,8 +7,6 @@ from maniflow.render.camera import Camera
 from maniflow.render.raster import *
 from maniflow.render.scene import *
 
-from tqdm import tqdm
-
 
 def rgbToHex(r: int, g: int, b: int) -> str:
     """
@@ -114,6 +112,7 @@ class RasterRenderer(Renderer):
     Disclaimer: as we rasterize each pixel one at a time this renderer is very slow and is thus
     not very useful when rendering animations
     """
+
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
@@ -127,6 +126,10 @@ class RasterRenderer(Renderer):
         # rendering the faces
         faceIterator = enumerate(projectedFaces)
         if verbose:
+            try:
+                from tqdm import tqdm
+            except ModuleNotFoundError as error:
+                raise error
             faceIterator = tqdm(faceIterator)
         for i, face in faceIterator:
             face = np.around(face[:, :2], 5)
@@ -154,12 +157,12 @@ class PainterRenderer(Renderer):
     This way, the renderer is much faster than the renderer implemented in RasterRenderer
     but does not support the opacities specifies in the shader of a mesh (see: the Shader class)
     """
+
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
     def render(self, mesh: "maniflow.mesh.Mesh", verbose=False) -> Image:
         width, height = self.scene.width, self.scene.height
-        print(width, height)
 
         projectedFaces, eyespaceFaces = self.projectFaces(mesh)
         image = Image.new("RGBA", (width, height))
@@ -167,6 +170,10 @@ class PainterRenderer(Renderer):
 
         faceIterator = enumerate(projectedFaces)
         if verbose:
+            try:
+                from tqdm import tqdm
+            except ModuleNotFoundError as error:
+                raise error
             faceIterator = tqdm(faceIterator)
         for i, face in faceIterator:
             face = np.around(face[:, :2], 5)
@@ -188,6 +195,7 @@ class SVGPainterRenderer(Renderer):
     for rendering animations.
     It fully supports the opacities set in the shader of the mesh (see: the Shader class)
     """
+
     def __init__(self, scene: Scene):
         super().__init__(scene)
 
@@ -204,6 +212,10 @@ class SVGPainterRenderer(Renderer):
 
         faceIterator = enumerate(projectedFaces)
         if verbose:
+            try:
+                from tqdm import tqdm
+            except ModuleNotFoundError as error:
+                raise error
             faceIterator = tqdm(faceIterator)
         for i, face in faceIterator:
             face = np.around(face[:, :2], 5)
