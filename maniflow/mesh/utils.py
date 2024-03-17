@@ -1,4 +1,5 @@
 import functools
+
 import numpy as np
 from maniflow.mesh import Mesh, Face
 
@@ -88,7 +89,7 @@ def coincidingVertices(mesh: Mesh):
     mesh.resetFaceGraph()
 
 
-def _normal_form(face1: tuple[int], face2: tuple[int]) -> list[tuple[int]]:
+def _normal_form(face1: tuple[int], face2: tuple[int]) -> tuple[tuple[int], tuple[int]]:
     """
     A method that takes two vertex lists of adjacent faces and
     shifts them so that the vertices that are shared by the faces are
@@ -204,6 +205,18 @@ def adjacentFaces(mesh: Mesh, vertex: int) -> list[Face]:
         if vertex in face.vertices:  # determine whether the face is adjacent to the vertex
             adjacent.append(face)
     return adjacent
+
+
+def adjacentFacesToEdge(mesh: Mesh, i: int, j: int):
+    return set(adjacentFaces(mesh, i)).intersection(adjacentFaces(mesh, j))
+
+
+def adjacentEdges(mesh: Mesh, vertex: int):
+    faces = adjacentFaces(mesh, vertex)
+    edges = set()
+    for face in faces:
+        edges |= set(face.vertices).difference({vertex})
+    return edges
 
 
 def isOrientable(mesh: Mesh) -> bool:
