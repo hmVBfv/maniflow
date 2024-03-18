@@ -1,0 +1,7 @@
+\section{Rendering meshes}
+\maniflow{} employs rasterization, a fundamental technique in computer graphics, to render meshes. This process involves projecting each face of the mesh onto the viewing plane. The \texttt{maniflow.render.camera.Camera} class encapsulates the necessary matrices and operations for this projection.
+
+\maniflow{} provides three renderers whose functionality is basically the same. Firstly, the vertices of each surface of the mesh are projected onto the display plane by means of said projections. These projected polygons (triangles) are then drawn. The only difference between the three renderers provided is how the triangles are drawn.
+
+\subsection{The camera system}
+Standard OpelGL matrices... \cite{Teschner}
