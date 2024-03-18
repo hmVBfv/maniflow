@@ -50,4 +50,3 @@ class Laplace(Operator):
 
     def resetMassMatrix(self):
         self._mass = None
-
