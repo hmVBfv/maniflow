@@ -22,6 +22,9 @@
 \usepackage{listings}
 \usepackage{epigraph} % used for the quotes
 
+\usepackage[sorting=none]{biblatex}
+\addbibresource{references.bib}
+
 \newcommand{\maniflow}{\texttt{maniflow}}
 \newcommand{\code}[1]{\texttt{#1}} % inline code setting
 \renewcommand{\lstlistingname}{Code}
@@ -84,4 +87,9 @@
 \newpage
 \input{sections/libinfo}
 \input{sections/introduction}
+\input{sections/facegraph}
+\input{sections/render}
+\input{sections/geometry}
+\newpage
+\printbibliography
 \end{document}
