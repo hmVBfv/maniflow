@@ -177,8 +177,16 @@ def simplifyByContraction(mesh: Mesh, tol = 0):
         for j in range(b+1, tmp_mesh.v):
             if validityMatrix[b, j] == 1:
                 cost_dict.pop((b, j))
-                validityMatrix[a, j] == 1
+                validityMatrix[a, j] = 1
                 cost_dict[(a, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
+
+        for face in tmp_mesh.faces:
+            if b in face.vertices:
+                if a in face.vertices:
+                    tmp_mesh.faces.remove(face)
+                else:
+                    face[face.index(b)] = a
+
 
         validityMatrix[b, :] = 0
         validityMatrix[:, b] = 0
@@ -187,3 +195,5 @@ def simplifyByContraction(mesh: Mesh, tol = 0):
         min_key = min(cost_dict, key=cost_dict.get)
         cost_dict.pop(min_key)
         a, b = min_key
+
+    tmp_mesh.clean()
