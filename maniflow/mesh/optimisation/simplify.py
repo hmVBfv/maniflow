@@ -140,24 +140,26 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
 
     return validityMatrix
 
-def simplifyByContraction(mesh: Mesh, tol = 0):
+def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
     # TODO:
-    # Richtige Umsetzung von temporaerem Mesh zur Manipulation
-    # Ziel: Eliminieren des zweiten Vertex' beim Zusammenziehen (der Erste bekommt die neuen Werte)
-    # Ggf. coincidingVertices verwenden? Effizient?
+    # Proper documentation and comments
     # TODO:
-    # Stopp-Bedingung fuers Zusammenziehen
-    # Ziel: Nicht in einzelnen nicht-zusammenhaengenden Punkten enden
-    # Wann Stopp? Warum?
+    # Check for potential mesh inversion (preserve orientation)
+    # Compare the normal of each neighboring face before and after the contraction
+    # -> If change then disallow or penalize
+    # TODO:
+    # Rigorous testing
     
     tmp_mesh = mesh.copy()
+    starting_amount_faces = tmp_mesh.f
     
+    # List of Qs for respective vertices as well as getting valid pairs
     Q_list = []
     for i in range(tmp_mesh.v):
         Q_list[i] = computeInitialQ(tmp_mesh, tmp_mesh.vertices[i])
     validityMatrix = getValidPairs(tmp_mesh, tol)
 
-    
+    # First soring for costs and getting best candidate for contraction
     cost_dict = {}
     for i in range(tmp_mesh.v):
         for j in range(i+1, tmp_mesh.v):
@@ -168,7 +170,15 @@ def simplifyByContraction(mesh: Mesh, tol = 0):
     cost_dict.pop(min_key)
     a, b = min_key
 
-    while cost_dict:
+    # Reduction parameter is either relative (<1) or absolute (integer)
+    # TODO:
+    # Sanity check
+    if reduction < 1:
+        reduction_goal = reduction * starting_amount_faces
+
+    # Loop where each iteration checks for the best candidate to contract
+    # then adjusting for the changes made by the contraction
+    while (tmp_mesh.f > reduction_goal):
     # Updating Matrix with new vbar
         Q1, Q2, vbar = optimalContractionPoint(Q_list[a], Q_list[b])
         tmp_mesh.vertices[a] = vbar
@@ -180,20 +190,26 @@ def simplifyByContraction(mesh: Mesh, tol = 0):
                 validityMatrix[a, j] = 1
                 cost_dict[(a, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
 
+        # Adjust faces affected by contraction 
         for face in tmp_mesh.faces:
             if b in face.vertices:
+                # If a and b shared a face then this face is now nonexistent / an edge
                 if a in face.vertices:
                     tmp_mesh.faces.remove(face)
                 else:
                     face[face.index(b)] = a
 
-
+        # Adjusting the validiy matrix
+        # TODO:
+        # b is pop'd from the cost dict anyways, so needed? Check this
         validityMatrix[b, :] = 0
         validityMatrix[:, b] = 0
 
+        # Get min value on heap
         cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
         min_key = min(cost_dict, key=cost_dict.get)
         cost_dict.pop(min_key)
         a, b = min_key
 
+    # Clean up vertices without faces (i.e. the secondary vertex of contractions)
     tmp_mesh.clean()
