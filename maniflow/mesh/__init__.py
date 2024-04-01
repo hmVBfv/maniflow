@@ -44,6 +44,7 @@ class Face:
         :param mesh: the mesh where the face is a part of
         :param vertices: a list of vertices that make up the face.
             At least three vertices make up a face.
+            Note that Python collects the arguments of the variable-length argument list *vertices into a tuple
         """
         if len(vertices) < 3:
             raise ValueError("Faces must be made up of three or more vertices!")
@@ -161,13 +162,11 @@ class Mesh:
         self.resetFaceGraph()
 
     @staticmethod
-    def union(*meshes: "Mesh", cleaning=True, coincideVertices=True) -> "Mesh":
+    def union(*meshes: "Mesh", cleaning=True) -> "Mesh":
         """
         A method to combine a list of meshes and return a new mesh.
         :param meshes: mesh list to be merged
         :param cleaning: whether mesh.cleaning() should be run after taking the union, done by default
-        :param coincideVertices: whether coincidingVertices() should be run after the union to identify equivalent
-        vertices, not used for now
         :return: the mesh of the union of the mesh list
         """
         if len(meshes) == 1:
@@ -184,8 +183,6 @@ class Mesh:
 
         if cleaning and len(meshes) == 2:
             mesh.clean()
-        #if coincideVertices:
-        #    coincidingVertices(mesh)
         return mesh
         
     def resetFaceGraph(self):
