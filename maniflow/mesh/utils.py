@@ -58,31 +58,45 @@ def getBoundaryVertices(mesh: Mesh) -> list[int]:
 
 def coincidingVertices(mesh: Mesh):
     """
-    A method to identify vertices with the same coordinates with each other [O(V^2)].
+    A method to identify vertices with the same coordinates with each other.
     This way we can "glue" edges together that share the same coordinates of technically different vertices.
     The approach is similar to an upper triangle matrix as we don't need to reverse check vertices,
     e.g. v1==v2 doesn't require additional v2==v1 check.
-    :param mesh: the mesh of which vertices should be 
+    :param mesh: the mesh of which vertices should be checked
     """
     extVertList = list()
-    faceList = [np.full(len(mesh.faces[i]), -1) for i in range(mesh.f)]
+    faceList = mesh.faces.copy()
 
+    # Iterate through all faces and their respective vertices
+    # Add the j-th vertex in the i-th face together with the info on i and j to extVertList
     for i in range(mesh.f):
         for j in range(len(mesh.faces[i])):
-            extVertList.append([mesh.faces[i][j], i, j])
+            extVertList.append([mesh.faces[i][j], i, j])    # the j-th vertex in the i-th face
         
-    
+    # Sort by the first element (the vertex coordinates), e.g.
+    # [2, 1, 3], [3, 4, 5], [2, 3, 1], [1, 3, 2]
+    # results in
+    # [1, 2, 3], [2, 1, 3], [2, 3, 1], [3, 4, 5]
+    # Python uses Timsort as sort()-algorithm which is stable and on average takes O(n log(n)).
     extVertList.sort(key = lambda x : list(x[0]))
 
-    vertList = [extVertList[0][0]]
+    # Initialize list vertList
+    vertList = list()
 
+    # Iterating through all entries of extVertList
+    # This does include multiple instances of the same vertex which occurs in different faces
     for v in extVertList:
-        if not np.allclose(v[0], vertList[-1], atol=1e-06):
+        # If either vertList is empty (first iteration) or vertex is not close to the previous one, add to the varying vertices list
+        # Note that all coordinates have to be within tolerance for vertices to be seen as equal (so within a block of atol x atol x atol size)
+        # Therefore we can simply start checking from the first coordinate and directly reject if too far away, otherwise continue with second coordiante
+        if (not vertList) or (not np.allclose(v[0], vertList[-1], atol=1e-06)):
             vertList.append(v[0])
-        faceList[v[1]][v[2]] = len(vertList) - 1
+        # As mesh.faces.vertices is stored as tuple (cp. Face constructor) we need to temporarily change it to a list for item assignement
+        face_vertices_list = list(faceList[v[1]].vertices)
+        face_vertices_list[v[2]] = len(vertList) - 1
+        faceList[v[1]].vertices = tuple(face_vertices_list)
 
-    # update the faces
-
+    # Update the faces
     mesh.vertices = vertList
     mesh.faces = faceList
     mesh.resetFaceGraph()
