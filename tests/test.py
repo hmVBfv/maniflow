@@ -31,13 +31,12 @@ class TestClean(unittest.TestCase):
 
 class TestCoinciding(unittest.TestCase):
     def test_coinciding(self):        
-        mm = OBJFile.read("examples/moebius.obj")
-        bv = getBoundaryVertices(mm)
-        bm = Mesh()
-        bm.vertices = mm.vertices
-        bm.faces = [f for i in bv for f in adjacentFaces(bm, i)]
-        bm.clean()
-        self.assertTrue(isOrientable(bm), "two half-twist moebius strip should be orientable")
+        teapot = OBJFile.read("examples/teapot.obj")
+        # The original teapot has 19 components
+        # but when identifying coinciding vertices this comes down to four components (body, lid, spout, handle)
+        coincidingVertices(teapot)
+        components = connectedComponents(teapot)
+        self.assertTrue(len(components) == 4, "The teapot should consist of four components after cleaning up coinciding vertices.")
 
 
 class TestBoundary(unittest.TestCase):
