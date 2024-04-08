@@ -156,7 +156,7 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
     # List of Qs for respective vertices as well as getting valid pairs
     Q_list = []
     for i in range(tmp_mesh.v):
-        Q_list[i] = computeInitialQ(tmp_mesh, tmp_mesh.vertices[i])
+        Q_list[i] = computeInitialQ(tmp_mesh, i)
     validityMatrix = getValidPairs(tmp_mesh, tol)
 
     # First soring for costs and getting best candidate for contraction
@@ -184,11 +184,15 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
         tmp_mesh.vertices[a] = vbar
         Q_list[a] = Q1 + Q2
         Q_list[b] = Q1 + Q2
-        for j in range(b+1, tmp_mesh.v):
-            if validityMatrix[b, j] == 1:
+        for j in range(tmp_mesh.v):
+            if validityMatrix[b, j] == 1 and (a != j) and (b != j):
                 cost_dict.pop((b, j))
                 validityMatrix[a, j] = 1
                 cost_dict[(a, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
+        
+        # Cleaning up validity matrix as b now identified with a
+        validityMatrix[b, :] = 0
+        validityMatrix[:, b] = 0
 
         # Adjust faces affected by contraction 
         for face in tmp_mesh.faces:
@@ -199,12 +203,6 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
                 else:
                     face[face.index(b)] = a
 
-        # Adjusting the validiy matrix
-        # TODO:
-        # b is pop'd from the cost dict anyways, so needed? Check this
-        validityMatrix[b, :] = 0
-        validityMatrix[:, b] = 0
-
         # Get min value on heap
         cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
         min_key = min(cost_dict, key=cost_dict.get)
@@ -213,3 +211,5 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
 
     # Clean up vertices without faces (i.e. the secondary vertex of contractions)
     tmp_mesh.clean()
+
+    return tmp_mesh
