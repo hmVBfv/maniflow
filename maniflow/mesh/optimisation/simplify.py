@@ -2,7 +2,7 @@ import numpy as np
 from maniflow.mesh import Mesh
 from maniflow.mesh.utils import adjacentFaces
 
-def computePlaneEquation(vert1: int, vert2: int, vert3: int) -> list:
+def computePlaneEquation(mesh: Mesh, vert1: int, vert2: int, vert3: int) -> list:
     """
     A method to compute the coefficients of the plane equation
     ax + by + cy + d = 0
@@ -15,13 +15,13 @@ def computePlaneEquation(vert1: int, vert2: int, vert3: int) -> list:
     :return: List of coefficients of the plane equation
     """
     # Calculating vectors from vertices
-    vec1 = vert2 - vert1
-    vec2 = vert3 - vert1
+    vec1 = mesh.vertices[vert2] - mesh.vertices[vert1]
+    vec2 = mesh.vertices[vert3] - mesh.vertices[vert1]
     
     # Calculation of coefficients from vectors
     normal_vec = np.cross(vec1, vec2)
     normalized_vec = normal_vec / np.linalg.norm(normal_vec)    # for constraint
-    d_coefficient = -np.dot(normalized_vec, vert1)
+    d_coefficient = -np.dot(normalized_vec, mesh.vertices[vert1])
     
     # Combining coefficients a, b, c with d into list
     plane_equation = np.concatenate((normalized_vec, [d_coefficient]))
@@ -41,8 +41,9 @@ def computeFundamentalErrorQuadric(p: list) -> np.array:
     """
     # 4x4 given by the combination of coefficients of the plane
     Kp = np.zeros((4,4))
-    for i, j in range(4):
-        Kp[i, j] = p[i] * p[j]
+    for i in range(4):
+        for j in range(4):
+            Kp[i, j] = p[i] * p[j]
     return Kp
 
 def computeInitialQ(mesh: Mesh, vert: int) -> np.array:
@@ -59,11 +60,11 @@ def computeInitialQ(mesh: Mesh, vert: int) -> np.array:
     Q = 0
     # Loop over the adjacent faces and add up their respective Kp
     for face in adjacent_faces:
-        plane_equation = computePlaneEquation(face.vertices[0], face.vertices[1], face.vertices[2])
+        plane_equation = computePlaneEquation(mesh, face.vertices[0], face.vertices[1], face.vertices[2])
         Q += computeFundamentalErrorQuadric(plane_equation)
     return Q
 
-def optimalContractionPoint(Q1: np.array, Q2: np.array) -> list:
+def optimalContractionPoint(mesh: Mesh, vert1: int, Q1: np.array, Q2: np.array) -> tuple[np.array, np.array]:
     """
     A method to calculate the optimal contraction point between two contracting vertices.
     We take Q1 and Q2 as parameters instead of vert1 and vert2 as Q
@@ -79,8 +80,13 @@ def optimalContractionPoint(Q1: np.array, Q2: np.array) -> list:
     """
     Q = Q1 + Q2
     Q[-1] = [0, 0, 0, 1]
-    vbar = np.dot(np.linalg.pinv(Q), np.array([0, 0, 0, 1]))
-    return vbar
+    # Check for invertability of Q
+    if np.linalg.det(Q) != 0:
+        vbar = np.dot(np.linalg.inv(Q), np.array([0, 0, 0, 1]))
+    else:   # If not invertible take point the first initial point
+        vbar = mesh.vertices[vert1]
+        Q = Q1
+    return Q, vbar[:3]
 
 def contractingCost(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.array) -> int:
     """
@@ -97,7 +103,7 @@ def contractingCost(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.arr
     :return: Cost of contraction the given two vertices
     """
     # Compute the contraction point vbar between vert1 and vert2
-    vbar = optimalContractionPoint(mesh, vert1, vert2)
+    _, vbar = optimalContractionPoint(mesh, vert1, Q1, Q2)
     # Apply cost function
     cost = np.dot((Q1 + Q2), vbar)
     cost = np.dot(vbar, cost)
@@ -154,7 +160,8 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
     starting_amount_faces = tmp_mesh.f
     
     # List of Qs for respective vertices as well as getting valid pairs
-    Q_list = []
+    Q_list = [0] * tmp_mesh.v   # Initialize list of length v
+    # Fill list with Q values
     for i in range(tmp_mesh.v):
         Q_list[i] = computeInitialQ(tmp_mesh, i)
     validityMatrix = getValidPairs(tmp_mesh, tol)
@@ -180,10 +187,10 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
     # then adjusting for the changes made by the contraction
     while (tmp_mesh.f > reduction_goal):
     # Updating Matrix with new vbar
-        Q1, Q2, vbar = optimalContractionPoint(Q_list[a], Q_list[b])
+        Q_new, vbar = optimalContractionPoint(mesh, a, Q_list[a], Q_list[b])
         tmp_mesh.vertices[a] = vbar
-        Q_list[a] = Q1 + Q2
-        Q_list[b] = Q1 + Q2
+        Q_list[a] = Q_new
+        Q_list[b] = Q_new
         for j in range(tmp_mesh.v):
             if validityMatrix[b, j] == 1 and (a != j) and (b != j):
                 cost_dict.pop((b, j))
