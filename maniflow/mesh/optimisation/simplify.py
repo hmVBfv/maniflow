@@ -85,8 +85,9 @@ def optimalContractionPoint(mesh: Mesh, vert1: int, Q1: np.array, Q2: np.array) 
         vbar = np.dot(np.linalg.inv(Q), np.array([0, 0, 0, 1]))
     else:   # If not invertible take point the first initial point
         vbar = mesh.vertices[vert1]
+        vbar.append(1)
         Q = Q1
-    return Q, vbar[:3]
+    return Q, vbar
 
 def contractingCost(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.array) -> int:
     """
@@ -126,11 +127,12 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
     for face in mesh.faces:
         # Iterate over pairs of vertices in each face
         for i in range(len(face)):
-            for j in range(i, len(face)):
+            for j in range(i+1, len(face)):
                 # Check if the pair has not been marked as valid before
                 if validityMatrix[face.vertices[i], face.vertices[j]] != 1:
                     # Matrix is symmetric
                     validityMatrix[face.vertices[i], face.vertices[j]] = 1
+                    validityMatrix[face.vertices[j], face.vertices[i]] = 1
     
     # tol != 0 implies that we want to do non-edge contraction as well
     if tol != 0:
@@ -172,10 +174,13 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
         for j in range(i+1, tmp_mesh.v):
             if validityMatrix[i, j] != 0:
                 cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
+                
     cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
     min_key = min(cost_dict, key=cost_dict.get)
     cost_dict.pop(min_key)
     a, b = min_key
+    print(validityMatrix[1883,1881])
+    print(min_key)
 
     # Reduction parameter is either relative (<1) or absolute (integer)
     # TODO:
@@ -188,12 +193,16 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
     while (tmp_mesh.f > reduction_goal):
     # Updating Matrix with new vbar
         Q_new, vbar = optimalContractionPoint(mesh, a, Q_list[a], Q_list[b])
-        tmp_mesh.vertices[a] = vbar
+        tmp_mesh.vertices[a] = vbar[:3] # Ignoring the trailing 1 of vbar=[x,y,z,1]
         Q_list[a] = Q_new
         Q_list[b] = Q_new
         for j in range(tmp_mesh.v):
-            if validityMatrix[b, j] == 1 and (a != j) and (b != j):
-                cost_dict.pop((b, j))
+            if ((validityMatrix[b, j] == 1) or (validityMatrix[j, b] == 1)) and (a != j) and (b != j):
+                # Order is relevant in the cost_dict so (b,j) might not be contained but (j,b) is for j<b 
+                if b < j:
+                    cost_dict.pop((b, j))
+                else:
+                    cost_dict.pop((j, b))
                 validityMatrix[a, j] = 1
                 cost_dict[(a, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
         
@@ -201,14 +210,15 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
         validityMatrix[b, :] = 0
         validityMatrix[:, b] = 0
 
-        # Adjust faces affected by contraction 
-        for face in tmp_mesh.faces:
-            if b in face.vertices:
-                # If a and b shared a face then this face is now nonexistent / an edge
-                if a in face.vertices:
-                    tmp_mesh.faces.remove(face)
-                else:
-                    face[face.index(b)] = a
+        # Adjust faces affected by contraction          
+        for i in tmp_mesh.f:
+            for j in range(3):
+                if tmp_mesh.faces[i].vertices[j] == b:  # This construct returns vertex index not coordinates to compare against b
+                    # If a and b shared a face then this face is now nonexistent / an edge
+                    if a in tmp_mesh.faces[i].vertices:
+                        tmp_mesh.faces.remove(tmp_mesh.faces[i])
+                    else:
+                        tmp_mesh.faces[i].vertices[j] = a
 
         # Get min value on heap
         cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
