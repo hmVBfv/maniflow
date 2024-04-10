@@ -192,17 +192,24 @@ def pushOrientation(mesh: Mesh):
                     mesh.faces[neighbor].vertices = mesh.faces[neighbor].vertices[::-1]
 
 
-def adjacentFaces(mesh: Mesh, vertex: int) -> list[Face]:
+def adjacentFaces(mesh: Mesh, vertex: int, indices=False) -> list:
     """
     A method to determine the adjacent faces of a given vertex
     :param mesh: the mesh on which the vertex is
     :param vertex: the vertex from which the adjacent areas are to be determined
-    :return: a list containing the adjacent faces of the given vertex
+    :param indices: whether the output list is supposed to be containing actual face instances (default)
+                    or the indices of the faces within mesh.faces
+    :return: a list containing the adjacent faces of the given vertex in the format indicated by the indices parameter
     """
     adjacent = list()  # we will store the adjacent faces in this list
-    for face in mesh.faces:  # traverse all faces of the mesh
-        if vertex in face.vertices:  # determine whether the face is adjacent to the vertex
-            adjacent.append(face)
+    # Iterate through all the faces by their index
+    for i in range(mesh.f):
+        # If the vertex is part of the face append according to indices parameter
+        if vertex in mesh.faces[i].vertices:
+            if not indices:
+                adjacent.append(mesh.faces[i])
+            elif indices:
+                adjacent.append(i)
     return adjacent
 
 

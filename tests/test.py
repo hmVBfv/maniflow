@@ -70,5 +70,11 @@ class TestMeshUnion(unittest.TestCase):
         m = Mesh.union(cube, cone, cube.copy())
         self.assertEqual(len(connectedComponents(m)), 3)
 
+class TestAdjacentFaces(unittest.TestCase):
+    def test_adjacentFaces(self):
+        moebius = OBJFile.read("examples/moebius.obj")
+        intersection = list(set(adjacentFaces(moebius, 0)) & set(adjacentFaces(moebius, 1)))
+        self.assertEqual(len(intersection), 2)
+
 if __name__ == "__main__":
     unittest.main()
