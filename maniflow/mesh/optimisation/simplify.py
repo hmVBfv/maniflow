@@ -123,17 +123,14 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
 
     # Initialize an adjacency matrix with zeros (not adjacent)
     validityMatrix = np.zeros((mesh.v, mesh.v))
-    # Iterate over faces in the mesh
-    for face in mesh.faces:
-        # Iterate over pairs of vertices in each face
-        for i in range(len(face)):
-            for j in range(i+1, len(face)):
-                # Check if the pair has not been marked as valid before
-                if validityMatrix[face.vertices[i], face.vertices[j]] != 1:
-                    # Matrix is symmetric
-                    validityMatrix[face.vertices[i], face.vertices[j]] = 1
-                    validityMatrix[face.vertices[j], face.vertices[i]] = 1
+    # Iterate over faces in the mesh         
+    for i in range(mesh.f):
+        for j in range(3):
+            for k in range(3):
+                validityMatrix[mesh.faces[i].vertices[j], mesh.faces[i].vertices[k]] = 1
+                validityMatrix[mesh.faces[i].vertices[k], mesh.faces[i].vertices[j]] = 1
     
+    """
     # tol != 0 implies that we want to do non-edge contraction as well
     if tol != 0:
         # Iterate over all vertices
@@ -145,10 +142,11 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
                     # If within tolerance, mark vertices down with 2 to be able to differentiate
                     if np.linalg.norm(face.vertices[i], face.vertices[j]) < tol:
                         validityMatrix[face.vertices[i], face.vertices[j]] = 1
+    """
 
     return validityMatrix
 
-def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
+def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
     # TODO:
     # Proper documentation and comments
     # TODO:
@@ -167,20 +165,12 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
     for i in range(tmp_mesh.v):
         Q_list[i] = computeInitialQ(tmp_mesh, i)
     validityMatrix = getValidPairs(tmp_mesh, tol)
+    print(np.where(validityMatrix[3603] == 1))
 
-    # First soring for costs and getting best candidate for contraction
-    cost_dict = {}
-    for i in range(tmp_mesh.v):
-        for j in range(i+1, tmp_mesh.v):
-            if validityMatrix[i, j] != 0:
-                cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
-                
     cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
     min_key = min(cost_dict, key=cost_dict.get)
-    cost_dict.pop(min_key)
     a, b = min_key
-    print(validityMatrix[1883,1881])
-    print(min_key)
+    del cost_dict[min_key]
 
     # Reduction parameter is either relative (<1) or absolute (integer)
     # TODO:
@@ -197,36 +187,50 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.5):
         Q_list[a] = Q_new
         Q_list[b] = Q_new
         for j in range(tmp_mesh.v):
-            if ((validityMatrix[b, j] == 1) or (validityMatrix[j, b] == 1)) and (a != j) and (b != j):
+            if validityMatrix[b, j] == 1:
+                if b == 3603:
+                    print(validityMatrix[b,j])
+                    print(validityMatrix[j,b])
+                if (a == j) or (b == j):
+                    break
                 # Order is relevant in the cost_dict so (b,j) might not be contained but (j,b) is for j<b 
-                if b < j:
-                    cost_dict.pop((b, j))
-                else:
-                    cost_dict.pop((j, b))
+                try:
+                    del cost_dict[(b, j)]
+                except:
+                    del cost_dict[(j, b)]
+                validityMatrix[j, b] = 0
+                validityMatrix[b, j] = 0
+                validityMatrix[j, a] = 1
                 validityMatrix[a, j] = 1
                 cost_dict[(a, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
         
         # Cleaning up validity matrix as b now identified with a
         validityMatrix[b, :] = 0
         validityMatrix[:, b] = 0
-
-        # Adjust faces affected by contraction          
-        for i in tmp_mesh.f:
-            for j in range(3):
-                if tmp_mesh.faces[i].vertices[j] == b:  # This construct returns vertex index not coordinates to compare against b
-                    # If a and b shared a face then this face is now nonexistent / an edge
-                    if a in tmp_mesh.faces[i].vertices:
-                        tmp_mesh.faces.remove(tmp_mesh.faces[i])
-                    else:
-                        tmp_mesh.faces[i].vertices[j] = a
-
+            
+        remove_list = list()
+        adjFaces = sorted(adjacentFaces(tmp_mesh, b, indices=True))
+        for index in adjFaces:
+            if a in tmp_mesh.faces[index].vertices:
+                remove_list.append(tmp_mesh.faces[index])
+            for i in range(3):
+                if tmp_mesh.faces[index].vertices[i] == b:
+                    tmp_list = list(tmp_mesh.faces[index].vertices)
+                    tmp_list[i] = a
+                    tmp_mesh.faces[index].vertices = tuple(tmp_list)
+                    break
+        
+        while remove_list:
+            face = remove_list.pop()
+            tmp_mesh.faces.remove(face)
+                
         # Get min value on heap
         cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
         min_key = min(cost_dict, key=cost_dict.get)
-        cost_dict.pop(min_key)
         a, b = min_key
+        del  cost_dict[min_key]
 
     # Clean up vertices without faces (i.e. the secondary vertex of contractions)
     tmp_mesh.clean()
-
+    tmp_mesh.resetFaceGraph()
     return tmp_mesh
