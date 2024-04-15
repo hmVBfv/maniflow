@@ -1,6 +1,6 @@
 import numpy as np
 from maniflow.mesh import Mesh
-from maniflow.mesh.utils import adjacentFaces
+from maniflow.mesh.utils import adjacentFaces, coincidingVertices
 
 def computePlaneEquation(mesh: Mesh, vert1: int, vert2: int, vert3: int) -> list:
     """
@@ -161,6 +161,7 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
     # Rigorous testing
     
     tmp_mesh = mesh.copy()
+    coincidingVertices(tmp_mesh) # 
     starting_amount_faces = tmp_mesh.f
     
     # List of Qs for respective vertices as well as getting valid pairs
@@ -187,6 +188,8 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
     # Sanity check
     if reduction < 1:
         reduction_goal = reduction * starting_amount_faces
+    else:
+        reduction_goal = reduction
 
     # Loop where each iteration checks for the best candidate to contract
     # then adjusting for the changes made by the contraction
@@ -226,21 +229,26 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
                         tmp_list = list(tmp_mesh.faces[index].vertices)
                         tmp_list[i] = a
                         tmp_mesh.faces[index].vertices = tuple(tmp_list)
-                    for j in range(i+1, 3):
-                        k = tmp_mesh.faces[index].vertices[i]
-                        l = tmp_mesh.faces[index].vertices[j]
-                        cost_dict[(k, l)] = contractingCost(tmp_mesh, tmp_mesh.vertices[k], tmp_mesh.vertices[l], Q_list[k], Q_list[l])
                     
         while remove_list:
             face = remove_list.pop()
             tmp_mesh.faces.remove(face)
 
+        adjFaces = sorted(adjacentFaces(tmp_mesh, a, indices=True))
+        for index in adjFaces:
+            for i in range(3):
+                if tmp_mesh.faces[index].vertices[i] == a:
+                    av1_index = tmp_mesh.faces[index].vertices[(a-1) % 3]
+                    av2_index = tmp_mesh.faces[index].vertices[(a+1) % 3]
+                    cost_dict[tuple(sorted((a, av1_index)))] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[av1_index], Q_list[a], Q_list[av1_index])
+                    cost_dict[tuple(sorted((a, av2_index)))] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[av2_index], Q_list[a], Q_list[av2_index])
+        """
         cost_dict = {}
         for i in range(tmp_mesh.v):
             for j in range(i+1, tmp_mesh.v):
                 if validityMatrix[i, j] != 0:
                     cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
-                
+        """
         # Get min value on heap
         cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
         min_key = min(cost_dict, key=cost_dict.get)
