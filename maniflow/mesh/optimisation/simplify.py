@@ -64,7 +64,7 @@ def computeInitialQ(mesh: Mesh, vert: int) -> np.array:
         Q += computeFundamentalErrorQuadric(plane_equation)
     return Q
 
-def optimalContractionPoint(mesh: Mesh, vert1: int, Q1: np.array, Q2: np.array) -> tuple[np.array, np.array]:
+def optimalContractionPoint(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.array) -> tuple[np.array, np.array]:
     """
     A method to calculate the optimal contraction point between two contracting vertices.
     We take Q1 and Q2 as parameters instead of vert1 and vert2 as Q
@@ -74,19 +74,23 @@ def optimalContractionPoint(mesh: Mesh, vert1: int, Q1: np.array, Q2: np.array) 
               q31 q32 q33 q34            0
               0   0   0   1  ]           1]
 
+    :param mesh: Mesh we are working with
+    :param vert1: First of the two contracting vertices
+    :param vert2: Second of the two contracting vertices
     :param Q1: Characteristic matrix Q of first vertex
     :param Q2: Characteristic matrix Q of second vertex
-    :return: Coordinates of contraction point
+    :return: Q value and coordinates of contraction point
     """
     Q = Q1 + Q2
     Q[-1] = [0, 0, 0, 1]
     # Check for invertability of Q
     if np.linalg.det(Q) != 0:
         vbar = np.dot(np.linalg.inv(Q), np.array([0, 0, 0, 1]))
-    else:   # If not invertible take point the first initial point
-        vbar = mesh.vertices[vert1]
-        vbar.append(1)
-        Q = Q1
+    else:   # If not invertible take the best point between the initial points and their midpoint
+        v1 = np.hstack([mesh.vertices[vert1], [1]])
+        v2 = np.hstack([mesh.vertices[vert2], [1]])
+        v12 = np.array([(v1+v2)[0] / 2, (v1+v2)[1] / 2, (v1+v2)[2] / 2, 1])
+        vbar = min(np.dot(v1, np.dot(Q, v1)), np.dot(v2, np.dot(Q, v2)), np.dot(v12, np.dot(Q, v12)))
     return Q, vbar
 
 def contractingCost(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.array) -> int:
@@ -104,7 +108,7 @@ def contractingCost(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.arr
     :return: Cost of contraction the given two vertices
     """
     # Compute the contraction point vbar between vert1 and vert2
-    _, vbar = optimalContractionPoint(mesh, vert1, Q1, Q2)
+    _, vbar = optimalContractionPoint(mesh, vert1, vert2,  Q1, Q2)
     # Apply cost function
     cost = np.dot((Q1 + Q2), vbar)
     cost = np.dot(vbar, cost)
@@ -165,7 +169,13 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
     for i in range(tmp_mesh.v):
         Q_list[i] = computeInitialQ(tmp_mesh, i)
     validityMatrix = getValidPairs(tmp_mesh, tol)
-    print(np.where(validityMatrix[3603] == 1))
+
+    # First soring for costs and getting best candidate for contraction
+    cost_dict = {}
+    for i in range(tmp_mesh.v):
+        for j in range(i+1, tmp_mesh.v):
+            if validityMatrix[i, j] != 0:
+                cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
 
     cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
     min_key = min(cost_dict, key=cost_dict.get)
@@ -182,15 +192,12 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
     # then adjusting for the changes made by the contraction
     while (tmp_mesh.f > reduction_goal):
     # Updating Matrix with new vbar
-        Q_new, vbar = optimalContractionPoint(mesh, a, Q_list[a], Q_list[b])
+        Q_new, vbar = optimalContractionPoint(mesh, a, b, Q_list[a], Q_list[b])
         tmp_mesh.vertices[a] = vbar[:3] # Ignoring the trailing 1 of vbar=[x,y,z,1]
         Q_list[a] = Q_new
         Q_list[b] = Q_new
         for j in range(tmp_mesh.v):
             if validityMatrix[b, j] == 1:
-                if b == 3603:
-                    print(validityMatrix[b,j])
-                    print(validityMatrix[j,b])
                 if (a == j) or (b == j):
                     break
                 # Order is relevant in the cost_dict so (b,j) might not be contained but (j,b) is for j<b 
@@ -213,16 +220,26 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
         for index in adjFaces:
             if a in tmp_mesh.faces[index].vertices:
                 remove_list.append(tmp_mesh.faces[index])
-            for i in range(3):
-                if tmp_mesh.faces[index].vertices[i] == b:
-                    tmp_list = list(tmp_mesh.faces[index].vertices)
-                    tmp_list[i] = a
-                    tmp_mesh.faces[index].vertices = tuple(tmp_list)
-                    break
-        
+            else:
+                for i in range(3):
+                    if tmp_mesh.faces[index].vertices[i] == b:
+                        tmp_list = list(tmp_mesh.faces[index].vertices)
+                        tmp_list[i] = a
+                        tmp_mesh.faces[index].vertices = tuple(tmp_list)
+                    for j in range(i+1, 3):
+                        k = tmp_mesh.faces[index].vertices[i]
+                        l = tmp_mesh.faces[index].vertices[j]
+                        cost_dict[(k, l)] = contractingCost(tmp_mesh, tmp_mesh.vertices[k], tmp_mesh.vertices[l], Q_list[k], Q_list[l])
+                    
         while remove_list:
             face = remove_list.pop()
             tmp_mesh.faces.remove(face)
+
+        cost_dict = {}
+        for i in range(tmp_mesh.v):
+            for j in range(i+1, tmp_mesh.v):
+                if validityMatrix[i, j] != 0:
+                    cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
                 
         # Get min value on heap
         cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
