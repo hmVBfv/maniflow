@@ -1,6 +1,6 @@
 import numpy as np
 from maniflow.mesh import Mesh
-from maniflow.mesh.utils import adjacentFaces, coincidingVertices
+from maniflow.mesh.utils import adjacentFaces, coincidingVertices, getBoundaryVertices
 
 def computePlaneEquation(mesh: Mesh, vert1: int, vert2: int, vert3: int) -> list:
     """
@@ -93,6 +93,38 @@ def optimalContractionPoint(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2
         vbar = min(np.dot(v1, np.dot(Q, v1)), np.dot(v2, np.dot(Q, v2)), np.dot(v12, np.dot(Q, v12)))
     return Q, vbar
 
+def rewriteFaces(mesh: Mesh, a: int, b: int, Q1: np.array, Q2: np.array):
+    _, vbar = optimalContractionPoint(mesh, a, b,  Q1, Q2)
+    adjFaces = adjacentFaces(mesh, a, indices=True)
+    adjFaces = adjFaces + adjacentFaces(mesh, b, indices=True)
+    for face in adjFaces:
+        if (a in mesh.faces[face].vertices) and (b in mesh.faces[face].vertices):
+            mesh.faces[face].vertices = (b, b, b)
+        else:
+            for i in range(3):
+                if mesh.faces[face].vertices[i] == b:
+                    tmp_list = list(mesh.faces[face].vertices)
+                    tmp_list[i] = a
+                    mesh.faces[face].vertices = tuple(tmp_list)
+    mesh.vertices[a] = vbar[:3]
+    return mesh
+
+def normalsFlipped(mesh: Mesh, a: int, b: int, Q1: np.array, Q2: np.array):
+    mesh2 = mesh.copy()
+    _, vbar = optimalContractionPoint(mesh2, a, b,  Q1, Q2)
+    adjFaces = adjacentFaces(mesh2, a, indices=True)
+    adjFaces = adjFaces + adjacentFaces(mesh2, b, indices=True)
+    norm_dict = {}
+    for face in adjFaces:
+        norm_dict[face] = mesh2.faces[face].normal
+    mesh2 = rewriteFaces(mesh2, a, b, Q1, Q2)
+    adjFaces_new = adjacentFaces(mesh2, a, indices=True)
+    for face_new in adjFaces_new:
+        if np.dot(mesh2.faces[face_new].normal, norm_dict[face_new]) < 0:
+            return True
+        else:
+            return False
+
 def contractingCost(mesh: Mesh, vert1: int, vert2: int, Q1: np.array, Q2: np.array) -> int:
     """
     A method to calculate the cost of contracting two valid vertices on the mesh.
@@ -124,15 +156,16 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
     :return: validityMatrix of vertices in mesh
     """
     mesh.clean()
-
+    boundaryVerts = getBoundaryVertices(mesh)
     # Initialize an adjacency matrix with zeros (not adjacent)
     validityMatrix = np.zeros((mesh.v, mesh.v))
     # Iterate over faces in the mesh         
     for i in range(mesh.f):
         for j in range(3):
             for k in range(3):
-                validityMatrix[mesh.faces[i].vertices[j], mesh.faces[i].vertices[k]] = 1
-                validityMatrix[mesh.faces[i].vertices[k], mesh.faces[i].vertices[j]] = 1
+                if (mesh.faces[i].vertices[j] not in boundaryVerts) and (mesh.faces[i].vertices[j] not in boundaryVerts):
+                    validityMatrix[mesh.faces[i].vertices[j], mesh.faces[i].vertices[k]] = 1
+                    validityMatrix[mesh.faces[i].vertices[k], mesh.faces[i].vertices[j]] = 1
     
     """
     # tol != 0 implies that we want to do non-edge contraction as well
@@ -176,7 +209,8 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
     for i in range(tmp_mesh.v):
         for j in range(i+1, tmp_mesh.v):
             if validityMatrix[i, j] != 0:
-                cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
+                if not normalsFlipped(mesh, i, j, Q_list[i], Q_list[j]):
+                    cost_dict[(i, j)] = contractingCost(tmp_mesh, i, j, Q_list[i], Q_list[j])
 
     cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
     min_key = min(cost_dict, key=cost_dict.get)
