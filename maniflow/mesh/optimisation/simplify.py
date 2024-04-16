@@ -111,7 +111,6 @@ def rewriteFaces(mesh: Mesh, a: int, b: int, Q1: np.array, Q2: np.array):
 
 def normalsFlipped(mesh: Mesh, a: int, b: int, Q1: np.array, Q2: np.array):
     mesh2 = mesh.copy()
-    _, vbar = optimalContractionPoint(mesh2, a, b,  Q1, Q2)
     adjFaces = adjacentFaces(mesh2, a, indices=True)
     adjFaces = adjFaces + adjacentFaces(mesh2, b, indices=True)
     norm_dict = {}
@@ -174,7 +173,8 @@ def getValidPairs(mesh: Mesh, tol = 0) -> np.array:
         # Only check forward (when v1 and v2 check against eachother, no need to do so for v2 and v1 again)
         for i in range(mesh.v):
             for j in range(i, mesh.v):
-                # Ignore adjacent vertices for efficiency
+                               if (a == j) or (b == j):
+ # Ignore adjacent vertices for efficiency
                 if validityMatrix[face.vertices[i], face.vertices[j]] != 1:
                     # If within tolerance, mark vertices down with 2 to be able to differentiate
                     if np.linalg.norm(face.vertices[i], face.vertices[j]) < tol:
@@ -229,10 +229,6 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
     # then adjusting for the changes made by the contraction
     while (tmp_mesh.f > reduction_goal):
     # Updating Matrix with new vbar
-        Q_new, vbar = optimalContractionPoint(mesh, a, b, Q_list[a], Q_list[b])
-        tmp_mesh.vertices[a] = vbar[:3] # Ignoring the trailing 1 of vbar=[x,y,z,1]
-        Q_list[a] = Q_new
-        Q_list[b] = Q_new
         for j in range(tmp_mesh.v):
             if validityMatrix[b, j] == 1:
                 if (a == j) or (b == j):
@@ -246,27 +242,13 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
                 validityMatrix[b, j] = 0
                 validityMatrix[j, a] = 1
                 validityMatrix[a, j] = 1
-                cost_dict[(a, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
+                cost_dict[tuple(sorted((a, j)))] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[j], Q_list[a], Q_list[j])
         
         # Cleaning up validity matrix as b now identified with a
         validityMatrix[b, :] = 0
         validityMatrix[:, b] = 0
             
-        remove_list = list()
-        adjFaces = sorted(adjacentFaces(tmp_mesh, b, indices=True))
-        for index in adjFaces:
-            if a in tmp_mesh.faces[index].vertices:
-                remove_list.append(tmp_mesh.faces[index])
-            else:
-                for i in range(3):
-                    if tmp_mesh.faces[index].vertices[i] == b:
-                        tmp_list = list(tmp_mesh.faces[index].vertices)
-                        tmp_list[i] = a
-                        tmp_mesh.faces[index].vertices = tuple(tmp_list)
-                    
-        while remove_list:
-            face = remove_list.pop()
-            tmp_mesh.faces.remove(face)
+        tmp_mesh = rewriteFaces(tmp_mesh, a, b, Q_list[a], Q_list[b])
 
         adjFaces = sorted(adjacentFaces(tmp_mesh, a, indices=True))
         for index in adjFaces:
@@ -274,20 +256,30 @@ def simplifyByContraction(mesh: Mesh, tol = 0, reduction = 0.95):
                 if tmp_mesh.faces[index].vertices[i] == a:
                     av1_index = tmp_mesh.faces[index].vertices[(a-1) % 3]
                     av2_index = tmp_mesh.faces[index].vertices[(a+1) % 3]
-                    cost_dict[tuple(sorted((a, av1_index)))] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[av1_index], Q_list[a], Q_list[av1_index])
-                    cost_dict[tuple(sorted((a, av2_index)))] = contractingCost(tmp_mesh, tmp_mesh.vertices[a], tmp_mesh.vertices[av2_index], Q_list[a], Q_list[av2_index])
-        """
-        cost_dict = {}
-        for i in range(tmp_mesh.v):
-            for j in range(i+1, tmp_mesh.v):
-                if validityMatrix[i, j] != 0:
-                    cost_dict[(i, j)] = contractingCost(tmp_mesh, tmp_mesh.vertices[i], tmp_mesh.vertices[j], Q_list[i], Q_list[j])
-        """
+                    if not normalsFlipped(tmp_mesh, a, av1_index, Q_list[a], Q_list[av1_index]):
+                        cost_dict[tuple(sorted((a, av1_index)))] = contractingCost(tmp_mesh, a, av1_index, Q_list[a], Q_list[av1_index])
+                    else:
+                        try:
+                            del cost_dict[tuple(sorted((a, av1_index)))]
+                        except:
+                            pass
+                    if not normalsFlipped(tmp_mesh, a, av2_index, Q_list[a], Q_list[av2_index]):
+                        cost_dict[tuple(sorted((a, av2_index)))] = contractingCost(tmp_mesh, a, av2_index, Q_list[a], Q_list[av2_index])
+                    else:
+                        try:
+                            del cost_dict[tuple(sorted((a, av2_index)))]
+                        except:
+                            pass
+
         # Get min value on heap
         cost_dict = dict(sorted(cost_dict.items(), key=lambda item: item[1]))
         min_key = min(cost_dict, key=cost_dict.get)
         a, b = min_key
         del  cost_dict[min_key]
+
+    for face in tmp_mesh.faces:
+        if face.vertices[0] == face.vertices[1] == face.vertices[2]:
+            tmp_mesh.faces.remove(face)
 
     # Clean up vertices without faces (i.e. the secondary vertex of contractions)
     tmp_mesh.clean()
