@@ -1,0 +1,19 @@
+\section*{Getting started}
+\addcontentsline{toc}{section}{Getting started}
+\epigraph{\footnotesize{``Be patient, for the world is broad and wide.``}}{\footnotesize{-- \textsc{E. A. Abbott}, Flatland: A Romance of Many Dimensions }}
+The code of \maniflow{} was originally published on
+\begin{center}
+    \qrcode{https://gitlab.gwdg.de/yangshan.xiang/scientific-computing}\\
+    \vspace*{0.5cm}
+    \href{https://gitlab.gwdg.de/yangshan.xiang/scientific-computing}{\url{https://gitlab.gwdg.de/yangshan.xiang/scientific-computing}}
+\end{center}
+To install the libary, simply use
+\begin{center}
+    \boxedcode{\texttt{pip install dist/maniflow-1.0-py2.py3-none-any.whl}}
+\end{center}
+To build the wheel file of the library, use
+\begin{center}
+    \boxedcode{\texttt{python setup.py bdist\_wheel --universal}}
+\end{center}
+\paragraph{Dependencies.} The installation and usage of \maniflow{} requires the following packages to be installed: \href{https://numpy.org/}{\texttt{numpy}}, \href{https://pillow.readthedocs.io/en/stable/}{\texttt{pillow}}
+\paragraph{Optional dependencies.} When using \texttt{maniflow.render.SVGPainterRenderer}, one requires the installation of \href{https://pypi.org/project/drawsvg/}{\texttt{drawsvg}}.

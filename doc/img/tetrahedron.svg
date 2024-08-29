@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="200" height="200" viewBox="0 0 200 200">
+<defs>
+</defs>
+<path d="M190.53851,151.26342 L77.3907,10.61175 L80.73822,127.77805 Z" fill="#060000" fill-opacity="0.5882352941176471" stroke="#000000" stroke-width="0.3" />
+<path d="M77.3907,10.61175 L80.73822,127.77805 L9.5854,178.89373 Z" fill="#c80000" fill-opacity="0.7843137254901961" stroke="#000000" stroke-width="0.3" />
+<path d="M190.53851,151.26342 L80.73822,127.77805 L9.5854,178.89373 Z" fill="#b00000" fill-opacity="0.5882352941176471" stroke="#000000" stroke-width="0.3" />
+<path d="M190.53851,151.26342 L77.3907,10.61175 L9.5854,178.89373 Z" fill="#ff4545" fill-opacity="0.5882352941176471" stroke="#000000" stroke-width="0.3" />
+</svg>

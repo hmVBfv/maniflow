@@ -1,0 +1,51 @@
+% https://www.pexels.com/photo/photo-of-clear-glass-measuring-cup-lot-1366942/
+
+%\definecolor{titlepagecolor}{cmyk}{1,.60,0,.40}
+\definecolor{titlepagecolor}{rgb}{.02,.07,0.16}
+\backgroundsetup{
+scale=1,
+angle=0,
+opacity=1,
+contents={\begin{tikzpicture}[remember picture,overlay]
+ \path [fill=titlepagecolor] (current page.west)rectangle (current page.north east); 
+ %\draw [color=white, very thick] (0.75\paperwidth,0)--(5,0.5\paperheight);
+ \node[opacity=0.3,inner sep=0pt] at (0,0.25\paperheight){\includegraphics[width=1\paperwidth,height=0.5\paperheight]{img/luis-vasconcelos-wxj729MaPRY-unsplash.jpg}};%height=0.5\paperheight %% https://unsplash.com/de/fotos/blaues-und-rotes-licht-digitales-hintergrundbild-wxj729MaPRY
+ %\node[opacity=1,inner sep=0pt] at (0.37\paperwidth,0.4\paperheight){\includegraphics[scale=0.5]{img/gau-1.pdf}};
+ \node at (0.25\paperwidth, 0.45\paperheight) {\includegraphics[scale=0.65]{img/gau-1.pdf}};
+\end{tikzpicture}}
+}
+
+\makeatletter                   
+\def\printauthor{%                  
+    {\large \@author}}          
+\makeatother
+
+\begin{titlepage}
+\BgThispage
+\newgeometry{left=00.5cm,right=6cm,bottom=3cm}
+\vspace*{0.25\textheight}
+\noindent
+\hspace{0.5cm}
+\textcolor{white}{\Huge\textbf{\textsf{\maniflow}}} %the titles
+\vspace*{0.25cm}\par
+\hspace{-0.055cm}
+\textcolor{white}{\large\textbf{\textsf{A Python library for geometric processing}}}
+\hspace{-20pt}
+\vspace*{10cm}\par
+\noindent
+\hspace*{0.4\paperwidth}
+\begin{minipage}{0.4\linewidth} %author info
+    \begin{flushright}
+        \printauthor
+    \end{flushright}
+\end{minipage} \hspace{15pt}
+%
+\begin{minipage}{0.9\linewidth} %the ornament
+    \hspace{-0.5cm}
+    \begin{tikzpicture}
+        \node[rotate=90] at (0,0) {\pgfornament[width=3cm, color=titlepagecolor]{86}};
+    \end{tikzpicture}
+\end{minipage} \hspace{-10pt}
+%
+\end{titlepage}
+\pagenumbering{arabic}

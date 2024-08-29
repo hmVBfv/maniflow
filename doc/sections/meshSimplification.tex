@@ -1,0 +1,144 @@
+\section{Mesh simplification}
+Mesh simplification is a fundamental technique in computer graphics and computational geometry, employed to optimize the performance of various applications, such as 3D modeling, simulation, and rendering. By reducing the complexity of a mesh while preserving its essential features, mesh simplification achieves a balance between computational efficiency and visually staying true to the original.
+
+The process of mesh simplification involves iteratively removing vertices, edges, or faces from the original mesh while minimizing the perceptible loss of detail. Various algorithms and methodologies have been developed to accomplish this task, ranging from straightforward decimation techniques to sophisticated error-driven approaches.
+
+Furthermore, mesh simplification is not only beneficial for real-time rendering and interactive applications but also plays a crucial role in data storage, transmission, and manipulation. By generating simplified representations of complex meshes, the storage requirements are minimized, facilitating efficient data exchange and manipulation across different platforms and devices.
+
+\subsection{Implemented Approach}
+\subsubsection{Approach to Mesh Simplification}
+In our approach we deploy vertex contraction as described in \cite{GarlandHeckbert}. This way we cut down on the amount of vertices and hence faces. Technically, also the amount of edges is reduced but in our project the edges are only considered via vertices and faces.\\
+The procedure has several steps depicted below as pseudocode:
+
+\begin{algorithm}[H]
+    \SetAlgoLined
+    \SetKwInOut{Input}{Input}
+    \SetKwInOut{Output}{Output}
+
+    \Input{mesh: A mesh}
+    \Output{The simplified mesh}
+    \caption{Mesh Simplification}
+    \label{alg:mesh_simplification}
+    \KwData{mesh}
+    
+    Clean the mesh to ensure consistency\;
+    Initialize an empty list for Q values\;
+    \For{each vertex in the mesh}{
+        Compute the initial Q value for the vertex\;
+        Add the computed Q value to the list\;
+    }
+
+    Initialize an empty validity matrix for vertex pairs\;
+    \For{each face in the mesh}{
+        Mark vertex pairs sharing an edge as valid in the validity matrix\;
+    }
+
+    Initialize an empty cost dictionary\;
+    \For{each pair of valid vertices}{
+        \If{the normals of the adjacent faces don't flip after contraction}{
+            Calculate the cost of contraction and add it to the dictionary\;
+        }
+    }
+
+    Sort the cost dictionary based on cost values\;
+
+    Initialize a reduction goal based on desired reduction percentage\;
+    \While{the number of faces in the mesh is greater than the reduction goal}{
+        Choose the vertex pair with the lowest cost from the dictionary\;
+        Update the mesh by contracting the chosen vertex pair\;
+        Update the validity matrix and cost dictionary accordingly\;
+    }
+
+    Remove redundant vertices and faces from the mesh\;
+    \Return{the simplified mesh}\;
+\end{algorithm}
+
+After getting rid of redundant vertices by applying \texttt{coincidingVertices} we want to compute a characteristic matrix \(\bm{Q}\) for each vertex. This characteristic will help us in computing the optimal contraction point. Say, we have a vector \(\bm{v}=[v_x, v_y, v_z, 1]^T\). Then the error at \(\bm{v}\) is denoted by
+\begin{align*}
+    \Delta(\bm{v})&=\sum_{\bm{p}\text{ is a plane of }\bm{v}}(\bm{v}^T\bm{p})(\bm{p}^T\bm{v})\\
+    &=\bm{v}^T\left(\sum_{\bm{p}\text{ is a plane of }\bm{v}}\bm{K}_{\bm{p}}\right)\bm{v}
+\end{align*}
+with \(\bm{K}_{\bm{p}}=\bm{p}\bm{p}^T\) being called the fundamental quadric error. Since \(\bm{p}\) is a plane given by the equation
+\begin{equation*}
+    ax+by+cz+d=0,\hspace{4pt}a^2+b^2+c^2+d^2=1
+\end{equation*}
+we get that \(\bm{K}_{\bm{p}}\) is a \(4\times4\)-matrix.\\
+The characteristic matrix \(\bm{Q}\) mentioned before is then the sum over fundamental quadric errors. We get that
+\begin{equation}\label{eq:contraction_cost}
+    \Delta(\bm{v})=\bm{v}^T\bm{Q}\bm{v}
+\end{equation}
+and choose that for two vertices $\bm{v_1}$ and $\bm{v_2}$ and their respective $\bm{Q_1}$ and $\bm{Q_2}$ we have $\bar{\bm{Q}}=\bm{Q_1}+\bm{Q_2}$ in their contraction point $\bar{\bm{v}}$. Minimizing the error $\Delta(\bar{\bm{v}})$, we use that it is quadratic. That implies that the minimal solution to this problem is linear, meaning that we set the partial derivatives of the error to zero. The problem can be reformulated to
+\begin{equation*}
+    \bar{\bm{v}}=\begin{pmatrix}
+        q_{11} &q_{12} &q_{13} &q_{14}\\
+        q_{21} &q_{22} &q_{23} &q_{24}\\
+        q_{31} &q_{32} &q_{33} &q_{34}\\
+        0   &0  &0  &1
+    \end{pmatrix}^{-1}\begin{pmatrix}
+        0\\0\\0\\1
+    \end{pmatrix}
+\end{equation*}
+where $q_ij$ is the element of the $i$-th row and $j$-th column of $\bar{\bm{Q}}$.
+
+If the matrix is not invertible then we want to choose one of the two initial vertices or their midpoint as new point of contraction. This depends on whichever of the three is minimizing the error best among them.\\
+
+For the next step we want to get \textit{valid pairs} of vertices. Two vertices form a \textit{valid pair} if either they are belonging to the face, i.e. they are connected by an edge, or, if they are closer to each other than a given parameter \texttt{tol}. Only these \textit{valid pairs} are considered for contraction.\\
+
+But an object has many edges. How do we determine which of those \textit{valid pairs} is the best to go for or start with? This is done by coming up with a cost function for the contraction of a \textit{valid pair}. We want to then work with the pair with the lowest cost of contraction. This is where we can apply \autoref{eq:contraction_cost}.
+\begin{defi}
+    We define our cost function to be the error at the contraction of the potential \textit{valid pair} $[\bm{v_1},\bm{v_2}]$ with their respective characterizing matrices $\bm{Q_1},\bm{Q_2}$, i.e.
+    \begin{equation*}
+        \Delta(\bar{\bm{v}})=\bar{\bm{v}}^T(\bar{\bm{Q}})\bar{\bm{v}}=\bar{\bm{v}}^T(\bm{Q_1}+\bm{Q_2})\bar{\bm{v}}
+    \end{equation*}
+\end{defi}
+
+Now we iterate through all the valid pairs, compute their cost and then sort them from smallest to largest value of the cost function. Our next contraction is simply the pair which has the lowest cost. One thing we have to consider though is whether an inversion of parts of the mesh happens if this pair contracts. This would be against the idea of mesh simplification as we would not represent the original mesh faithfully. So we take the pair with the lowest cost, do the contraction and check for inversions via the normals of the faces, i.e. the \texttt{normal} property of the \texttt{face}-class. If an inversion occurs we reverse this step, ignore this pair and move on to the next and so on.
+
+After having contracted a pair of vertices, we need to update the adjacent vertices and faces to this new point. Say the vertices involved in the contraction were $v_1$ and $v_2$. Then we go through all of their adjacent faces and see whether they share a face. If that is the case then an edge was contracted from a face meaning that the face itself is to be deleted. If a face has only one of them as vertex then we can just update the coordinates of this vertex to the contraction point calculated earlier. Finally, we recalculate the cost of valid pairs that included either $v_1$ or $v_2$, i.e. share and edge with the new contraction point. We repeat this until the number of faces is sufficiently low, as instructed by the parameter given by the user.
+
+\subsubsection{Overview of the functions in the code}
+Our implemented code aims to perform mesh simplification by cleverly reducing the complexity of input meshes while preserving their essential geometric characteristics.\\
+The implementation consists of several smaller functions that each do their part for the larger picture. The main function itself is \texttt{simplifyByContraction}. This overview aims to provide a rough idea on the smaller parts of the code.
+
+\begin{enumerate}
+    \item \textbf{Computing Plane Equation Coefficients} \\
+    The \texttt{computePlaneEquation} function computes the coefficients of the plane equation given three vertices. It utilizes vector calculations and the cross product to determine the plane's normal vector, which is then normalized to ensure unit length. The coefficients are returned in a list conforming to the equation \(ax + by + cz + d = 0\), where \(a^2 + b^2 + c^2 + d^2 = 1\).
+    
+    \item \textbf{Computing Fundamental Error Quadric} \\
+    The \texttt{computeFundamentalErrorQuadric} function calculates the fundamental error quadric \(\bm{K_p} = \bm{pp}^T\) for a plane represented by its coefficients. This quadric matrix is essential for characterizing the error associated with a plane. Also the sum over those \(\bm{K_p}\) is denoted by the characteristic matrix \(\bm{Q}\).
+    
+    \item \textbf{Computing Initial Characterization \(\bm{Q}\) of Vertex Error} \\
+    The \texttt{computeInitialQ} function computes the initial characterization of error at a vertex. It sums the error quadrics of all adjacent faces to the vertex, providing a comprehensive assessment of the vertex's error.
+    
+    \item \textbf{Optimal Contraction Point Calculation} \\
+    The \texttt{optimalContractionPoint} function determines the optimal point for contracting two vertices. It takes into account the error matrices associated with the vertices and calculates the contraction point accordingly. In cases where the error matrices are not invertible, it computes a midpoint between the vertices as an alternative contraction point.
+    
+    \item \textbf{Vertex Contraction and Mesh Rewriting} \\
+    The \texttt{rewriteFaces} function performs vertex contraction and updates the mesh accordingly. It adjusts adjacent faces' vertices and recalculates the position of the contracted vertex based on the optimal contraction point.
+    
+    \item \textbf{Checking Normals Consistency} \\
+    The \texttt{normalsFlipped} function verifies the consistency of normals before and after vertex contraction. It ensures that the contraction does not result in flipped normals, which could distort the mesh's geometry.
+    
+    \item \textbf{Cost Evaluation for Vertex Contraction} \\
+    The \texttt{contractingCost} function evaluates the cost associated with contracting two vertices. It utilizes the error matrices and contraction point to compute the contraction cost, aiding in identifying low-cost contractions for mesh simplification.
+    
+    \item \textbf{Generating Valid Vertex Pairs} \\
+    The \texttt{getValidPairs} function generates a validity matrix indicating valid pairs of vertices in the mesh. Validity is determined by vertices sharing an edge or being sufficiently close together, facilitating the contraction process.
+    
+    \item \textbf{Mesh Simplification by Contraction} \\
+    The \texttt{simplifyByContraction} function orchestrates the mesh simplification process using vertex contraction. It iteratively identifies and contracts vertex pairs based on cost considerations, aiming to achieve the desired reduction in mesh complexity while preserving its essential features.
+    
+    \end{enumerate}
+
+\subsection{Outlook and Future Works}
+When first looking into mesh simplification other approaches and methods can be found. A first attempt was made in reference to \citetitle{Hoppe}(\cite{Hoppe}). While the paper focuses on edges and \texttt{maniflow} does only implicitly work with edges via faces and vertices one can still transfer the operations from one system to another. It introduces three edge operations to optimize the mesh,
+\begin{itemize}
+    \item Edge collapse (equivalent to vertex contraction)
+    \item Edge split (introducing a new vertex on the edge)
+    \item Edge swap
+\end{itemize}
+The goal of the paper is to get a mesh that characterizes given data well enough or better while at the same time being simpler than the initial mesh.
+
+Sadly, the approach is not easily implemented for the scope of \texttt{maniflow}. As mentioned before, since it is mesh optimization and not simplification, even though one might lead to another, we have an initial mesh and data points that we want to be represented as good as possible by the mesh. In \texttt{maniflow} our mesh does already represent the data, that is how the mesh is formed in the first place.\\
+
+The code can be written and tested to work with all kinds of faces independent of the amount of vertices they have. E.g. the current three vertices implementation results in a degenerate face if we contract two vertices of a face. But for a face consisting of four vertices, the shape of the face would just change from a square to a triangle having now three vertices. It is easy to change the number of iterations needed in some for-loops but more complicated when being confronted with several iterations of contractions on a single face as it loses one vertex each time.
