@@ -27,6 +27,10 @@ The .obj file created by this code can be loaded into ![Blender](https://www.ble
 
 ![Screenshot](doc/moebius_2023-05-23.png)
 
+## Documentation
+
+For a more detailed summary of the capabilities and approaches, please refer to our comprehensive documentation available in PDF format: [Maniflow Documentation](doc/maniflow.pdf)
+
 ## Getting started
 To install the libarary, use
 
